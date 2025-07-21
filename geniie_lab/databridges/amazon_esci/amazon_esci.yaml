@@ -1,0 +1,32 @@
+_:  # top-level documentation
+  pretty_name: "Amazon ESCI"
+  desc: |
+    <p>
+    This dataset is derived from the <a href="https://huggingface.co/datasets/milistu/amazon-esci-data">Amazon ESCI dataset</a>,
+    originally released as part of the Amazon Product Search Challenge.
+    It contains queries, associated products, and ESCI labels indicating
+    the relevance of each product to the query.
+    </p>
+    <p>
+    The ESCI labels are mapped to relevance scores:
+    <ul>
+      <li><strong>E</strong>: Exact (3)</li>
+      <li><strong>S</strong>: Substitute (2)</li>
+      <li><strong>C</strong>: Complement (1)</li>
+      <li><strong>I</strong>: Irrelevant (0)</li>
+    </ul>
+    </p>
+
+train:
+  desc: |
+    <p>
+    The train split of the Amazon ESCI dataset, including queries,
+    product metadata, and graded relevance judgments derived from ESCI labels.
+    </p>
+
+test:
+  desc: |
+    <p>
+    The test split of the Amazon ESCI dataset, containing queries
+    and relevance judgments. Product metadata is shared with the train set.
+    </p>

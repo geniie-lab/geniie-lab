@@ -1,0 +1,29 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+title: "GENIIE-Lab: A Controlled Experimentation Testbed for Model Search Behaviour"
+type: software
+version: 0.1.0
+date-released: 2025-07-21
+url: "https://github.com/joholab/geniie-lab"
+authors:
+  - family-names: "Joho"
+    given-names: "Hideo"
+    orcid: "https://orcid.org/0000-0002-6611-652X"
+
+preferred-citation:
+  type: conference-paper
+  title: "An Instruction-Response Perspective on Large Language Models in Information Retrieval Tasks"
+  authors:
+    - family-names: "Joho"
+      given-names: "Hideo"
+      orcid: "https://orcid.org/0000-0002-6611-652X"
+    - family-names: "Jose"
+      given-names: "Joemon M."
+      orcid: "https://orcid.org/0000-0001-9228-1759"
+  year: 2025
+  collection-title: "Proceedings of the 48th International ACM SIGIR Conference on Research and Development in Information Retrieval"
+  booktitle: "Proceedings of the 48th International ACM SIGIR Conference on Research and Development in Information Retrieval"
+  publisher: "ACM"
+  doi: "10.1145/3726302.3730346"
+  start: 3843
+  end: 3852
