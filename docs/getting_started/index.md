@@ -10,7 +10,7 @@
 ## Install `geniie-lab`
 
 ```
-git clone https://github.com/joholab/geniie-lab.git
+git clone https://github.com/geniie-lab/geniie-lab.git
 python -m venv venv
 source venv/bin/activate
 (venv) python -m pip install -U pip
