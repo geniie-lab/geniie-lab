@@ -44,10 +44,10 @@ models=[
 
 ## Gemini compatible models
 
-Set `GENAI_API_KEY` in `.env` file
+Set `GEMINI_API_KEY` in `.env` file
 
 ```
-GENAI_API_KEY="[your key]"
+GEMINI_API_KEY="[your key]"
 ```
 
 Set your model name in `ExperimentalSettings` in the runner files in `scripts`
