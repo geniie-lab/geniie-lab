@@ -62,6 +62,26 @@ models=[
     )
 ```
 
+## OpenRouter compatible models
+
+Set `OPENROUTER_API_KEY` in `.env` file
+
+```
+OPENROUTER_API_KEY="[your key]"
+```
+
+Set your model name in `ExperimentalSettings` in the runner files in `scripts`
+
+```
+models=[
+    ModelDescription(
+        type="openrouter",
+        name="openai/gpt-4.1-miniM",
+        system_prompt="You're a helpful assistant",
+        temperature=0.0,
+    )
+```
+
 ## Local models via `ollama`
 
 Local models should be loaded via `ollama` at http://localhost:11434/v1.

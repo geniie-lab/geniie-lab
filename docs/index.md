@@ -18,7 +18,7 @@ Welcome to the geniie-lab documentation!
 You need to bring these items to use geniie-lab.
 
 1. A test collection accessible via `ir_datasets`
-1. LLMs (OpenAI, Gemini, or local models via `ollama`)
+1. LLMs (OpenAI, Gemini, OpenRouter, or local models via `ollama`)
 1. Opensearch client that can search the corpus of the test collection
     - Note that an opensearch client is not needed if you're only interested in `query` stage in the experiment.
 

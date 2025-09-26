@@ -3,7 +3,7 @@
 ## Prerequisites
 
 - A test collection accessible via [ir_datasets](datasets.md)
-- [LLMs](llms.md) (OpenAI, Gemini, or local models via `ollama`)
+- [LLMs](llms.md) (OpenAI, Gemini, OpenRouter, or local models via `ollama`)
 - [OpenSearch client](opensearch.md) that indexed the corpus of the collection
     - Note that an opensearch client is not needed if you're only interested in `query` stage in the experiment.
 
@@ -45,6 +45,10 @@ For Gemini LLMs:
 GEMINI_API_KEY="[your key]"
 ```
 
+For OpenRouter:
+```
+OPENROUTER_API_KEY="[your key]"
+```
 
 ## Edit your experimental settings
 

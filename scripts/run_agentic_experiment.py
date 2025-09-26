@@ -82,6 +82,12 @@ my_settings = ExperimentSettings(
         #     name="llama3.3:70b-instruct-q4_K_M",
         #     system_prompt="You're a helpful assistant",
         #     temperature=0.0,
+        # ),
+        # ModelDescription(
+        #     type="openrouter",
+        #     name="openai/gpt-4.1-mini",
+        #     system_prompt="You're a helpful assistant",
+        #     temperature=0.0,
         # )
     ],
     tools=[

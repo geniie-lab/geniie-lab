@@ -3,6 +3,7 @@ from geniie_lab.services.llm.llm_service_protocol import LLMServiceProtocol
 from geniie_lab.services.llm.ollama_llm_service import OllamaLLMService
 from geniie_lab.services.llm.openai_llm_service import OpenAILLMService
 from geniie_lab.services.llm.azure_llm_service import AzureOpenAILLMService
+from geniie_lab.services.llm.openrouter_llm_service import OpenRouterLLMService
 
 class LLMServiceFactory:
     def create_llm_service(self, genai_type: str) -> LLMServiceProtocol:
@@ -14,5 +15,7 @@ class LLMServiceFactory:
             return OpenAILLMService()
         elif genai_type == "azure":
             return AzureOpenAILLMService()
+        elif genai_type == "openrouter":
+            return OpenRouterLLMService()
         else:
             raise ValueError(f"Unknown genai_type: {genai_type}")
