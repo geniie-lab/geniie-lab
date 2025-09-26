@@ -44,10 +44,10 @@ models=[
 
 ## Gemini compatible models
 
-Set `GENAI_API_KEY` in `.env` file
+Set `GEMINI_API_KEY` in `.env` file
 
 ```
-GENAI_API_KEY="[your key]"
+GEMINI_API_KEY="[your key]"
 ```
 
 Set your model name in `ExperimentalSettings` in the runner files in `scripts`
@@ -57,6 +57,26 @@ models=[
     ModelDescription(
         type="gemini",
         name="gemini-2.0-flash-lite-001",
+        system_prompt="You're a helpful assistant",
+        temperature=0.0,
+    )
+```
+
+## OpenRouter compatible models
+
+Set `OPENROUTER_API_KEY` in `.env` file
+
+```
+OPENROUTER_API_KEY="[your key]"
+```
+
+Set your model name in `ExperimentalSettings` in the runner files in `scripts`
+
+```
+models=[
+    ModelDescription(
+        type="openrouter",
+        name="openai/gpt-4.1-miniM",
         system_prompt="You're a helpful assistant",
         temperature=0.0,
     )

@@ -29,7 +29,7 @@ class InstructionWithGenerate(Protocol):
 
 class GeminiLLMService:
     def __init__(self):
-        self.client = genai.Client(api_key=os.getenv("GENAI_API_KEY"))
+        self.client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 
     def _call_llm_and_parse(
         self,

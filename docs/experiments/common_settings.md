@@ -83,7 +83,7 @@
 
 ## Model Description
 
-- `type`: LLM types. Currently it accepts `openai`, `azure`, `gemini`, or `ollama`
+- `type`: LLM types. Currently it accepts `openai`, `azure`, `gemini`, `openrouter`, or `ollama`
 - `name`: Name of the model
 - `system_prompt`: A system (development) prompt
 - `temperature`: Temerature of the model (Default: 0.0)
