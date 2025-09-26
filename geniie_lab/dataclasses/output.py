@@ -50,7 +50,6 @@ class ClickExperimentOutput(DataClassJsonMixin):
     rankings: List[int]
     repetition: Optional[str] = 1
     reason: Optional[str] = None
-    docids: Optional[List[str]] = None
     stage: Optional[str] = "click"
     created_at: str = field(default_factory=lambda: datetime.now(UTC).isoformat())
 
