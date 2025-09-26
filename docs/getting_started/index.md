@@ -42,7 +42,7 @@ AZURE_API_KEY="[your key]"
 
 For Gemini LLMs:
 ```
-GENAI_API_KEY="[your key]"
+GEMINI_API_KEY="[your key]"
 ```
 
 
