@@ -77,10 +77,8 @@ class RankingStage:
     def run(self, settings: ExperimentSettings, state: ExperimentState, llm_service: LLMServiceProtocol, model: ModelDescription, tool: ToolDescription, opensearch_client: OpenSearchClientProtocol, stage_name: str) -> ExperimentState:
         print("\n--- Running: Ranking Stage ---", file=sys.stderr)
 
-        query_text = None
-        start_offset = 0
-        query_text = state.query.query
-        start_offset = state.query.start
+        query_text = getattr(state.query, "query", None)
+        start_offset = getattr(state.query, "start", 0)
 
         state.serp = opensearch_client.search_index_with_snippets(query_text, start=start_offset, size=settings.task.serp_size)
         state.docids = [item.docid for item in state.serp.results] if state.serp and state.serp.results else []
