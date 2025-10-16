@@ -1,3 +1,4 @@
+import re
 import sys
 import pprint
 from dataclasses import dataclass
@@ -260,7 +261,35 @@ class ExperimentRunner:
 
         self.llm_factory = LLMServiceFactory()
         self.opensearch_client_factory = OpenSearchClientFactory()
+        self._topic_slice: slice | None = self._resolve_topic_slice()
         self.topics = self._load_topics()
+
+    def _resolve_topic_slice(self) -> slice | None:
+            """
+            Determine which range of topics to load based on ExperimentSettings.
+
+            Priority:
+            1) settings.topic_ids: string like '3:10', ':5', '10:'
+            2) settings.max_topics: integer (legacy)
+            3) None -> no slicing (load all)
+            Uses 0-based, end-exclusive Python semantics.
+            """
+            topic_ids = getattr(self.settings, "topic_ids", None)
+            if topic_ids:
+                if not isinstance(topic_ids, str) or not re.match(r"^\s*\d*\s*:\s*\d*\s*$", topic_ids):
+                    raise ValueError(
+                        f"topic_ids must be a slice-like string 'start:end' (digits optional), got {topic_ids!r}"
+                    )
+                start_str, end_str = topic_ids.split(":")
+                start = int(start_str) - 1 if start_str.strip() else None
+                stop = int(end_str) if end_str.strip() else None
+                return slice(start, stop)
+
+            max_topics = getattr(self.settings, "max_topics", None)
+            if isinstance(max_topics, int):
+                return slice(0, max_topics)
+
+            return None
 
     def _load_topics(self) -> TopicList:
         dataset = ir_datasets.load(self.settings.topicset.name)
@@ -273,8 +302,8 @@ class ExperimentRunner:
         topics = list_cls()
 
         query_iter = dataset.queries_iter()
-        if self.settings.max_topics:
-            query_iter = islice(query_iter, self.settings.max_topics)
+        if self._topic_slice is not None:
+            query_iter = islice(query_iter, self._topic_slice.start, self._topic_slice.stop)
 
         for raw in query_iter:
             topic = topic_cls.from_ir_datasets(raw)
