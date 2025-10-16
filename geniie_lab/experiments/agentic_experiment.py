@@ -55,7 +55,7 @@ class QueryFormulationStage:
         instruction_text = self.config.instruction or self.DEFAULT_INSTRUCTION
         qf_instruction = QueryFormulationInstruction(instruction=instruction_text, task=settings.task, corpus=settings.corpus, tool=tool, topic=state.topic)
 
-        state.query = llm_service.create_query(model.name, model.temperature, state.memory, qf_instruction)
+        state.query = llm_service.create_query(model.name, model.temperature, model.top_p, state.memory, qf_instruction)
 
         output = QueryExperimentOutput(
             session_name = settings.name,
@@ -131,7 +131,7 @@ class ClickStage:
         instruction_text = self.config.instruction or self.DEFAULT_INSTRUCTION
         click_instruction = ClickInstruction(instruction=instruction_text, serp=state.serp)
 
-        state.clicks = llm_service.create_clicks(model.name, model.temperature, state.memory, click_instruction)
+        state.clicks = llm_service.create_clicks(model.name, model.temperature, model.top_p, state.memory, click_instruction)
 
         output = ClickExperimentOutput(
             session_name=settings.name,
@@ -186,7 +186,7 @@ class RelevanceJudgementStage:
             instruction_text = self.config.instruction or self.DEFAULT_INSTRUCTION
             rj_instruction = RelevanceJudgementInstruction(instruction=instruction_text, fulltext=state.fulltext)
 
-            state.relevance_judgement = llm_service.calc_relevance_judgement(model.name, model.temperature, state.memory, rj_instruction)
+            state.relevance_judgement = llm_service.calc_relevance_judgement(model.name, model.temperature, model.top_p, state.memory, rj_instruction)
             qrel_label = qrels.get(state.topic.id, click_docid, default=0)
 
             output = RelevanceJudgementExperimentOutput(
@@ -221,7 +221,7 @@ class QueryReFormulationStage:
         instruction_text = self.config.instruction or self.DEFAULT_INSTRUCTION
         qrf_instruction = QueryReFormulationInstruction(instruction=instruction_text)
 
-        state.query = llm_service.recreate_query(model.name, model.temperature, state.memory, qrf_instruction)
+        state.query = llm_service.recreate_query(model.name, model.temperature, model.top_p, state.memory, qrf_instruction)
 
         output = QueryReformulationExperimentOutput(
             session_name = settings.name,
@@ -256,7 +256,7 @@ class NextActionStage:
         instruction_text = self.config.instruction or self.DEFAULT_INSTRUCTION
         next_action_instruction = NextActionInstruction(instruction=instruction_text, task=settings.task)
 
-        state.next_action = llm_service.decide_next_action(model.name, model.temperature, state.memory, next_action_instruction)
+        state.next_action = llm_service.decide_next_action(model.name, model.temperature, model.top_p, state.memory, next_action_instruction)
 
         action_name = None
         if state.next_action and state.next_action.action:

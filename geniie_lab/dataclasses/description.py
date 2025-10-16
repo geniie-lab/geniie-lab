@@ -28,7 +28,8 @@ class CorpusDescription:
 class ModelDescription:
     type: str
     name: str
-    temperature: float
+    temperature: Optional[float] = 0.0
+    top_p: Optional[float] = 1.0
     system_prompt: Optional[str] = "You're a helpful assistant"
     system_role: Optional[str] = None
 
