@@ -88,6 +88,12 @@ my_settings = ExperimentSettings(
         #     name="openai/gpt-4.1-mini",
         #     system_prompt="You're a helpful assistant",
         #     temperature=0.0,
+        # ),
+        # ModelDescription(
+        #     type="vllm",
+        #     name="gpt-oss-120b",
+        #     system_prompt="You're a helpful assistant",
+        #     temperature=0.0,
         # )
     ],
     tools=[
