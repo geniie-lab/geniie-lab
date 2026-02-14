@@ -12,18 +12,15 @@ authors:
 
 preferred-citation:
   type: conference-paper
-  title: "An Instruction-Response Perspective on Large Language Models in Information Retrieval Tasks"
+  title: "Geniie-Lab: A Testbed for Controlled Experimentation of Model Search Behaviour"
   authors:
     - family-names: "Joho"
       given-names: "Hideo"
       orcid: "https://orcid.org/0000-0002-6611-652X"
-    - family-names: "Jose"
-      given-names: "Joemon M."
-      orcid: "https://orcid.org/0000-0001-9228-1759"
   year: 2025
-  collection-title: "Proceedings of the 48th International ACM SIGIR Conference on Research and Development in Information Retrieval"
-  booktitle: "Proceedings of the 48th International ACM SIGIR Conference on Research and Development in Information Retrieval"
+  collection-title: "Proceedings of the 2025 Annual International ACM SIGIR Conference on Research and Development in Information Retrieval in the Asia Pacific Region"
+  booktitle: "Proceedings of the 2025 Annual International ACM SIGIR Conference on Research and Development in Information Retrieval in the Asia Pacific Region"
   publisher: "ACM"
-  doi: "10.1145/3726302.3730346"
-  start: 3843
-  end: 3852
+  doi: "10.1145/3767695.3769479"
+  start: 55
+  end: 63
