@@ -219,7 +219,7 @@ class QueryReFormulationStage:
         instruction_text = self.config.instruction or self.DEFAULT_INSTRUCTION
         qrf_instruction = QueryReFormulationInstruction(instruction=instruction_text)
 
-        state.query = llm_service.recreate_query(model.name, model.temperature, state.memory, model.top_p, qrf_instruction)
+        state.query = llm_service.recreate_query(model.name, model.temperature, model.top_p, state.memory,  qrf_instruction)
 
         output = QueryReformulationExperimentOutput(
             session_name = settings.name,
