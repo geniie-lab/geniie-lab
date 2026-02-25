@@ -41,4 +41,5 @@ class ToolDescription:
     description: str
     host: str = "localhost"
     port: int = 9200
+    use_ssl: bool = True
     encode_model: Optional[str] = None

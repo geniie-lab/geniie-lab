@@ -19,6 +19,7 @@ class OpenSearchClientFactory:
                 index_name=tool.index_name,
                 host=tool.host,
                 port=tool.port,
+                use_ssl=tool.use_ssl,
                 dataset_name = settings.topicset.name,
                 http_auth=http_auth
             )
@@ -27,6 +28,7 @@ class OpenSearchClientFactory:
                 index_name=tool.index_name,
                 host=tool.host,
                 port=tool.port,
+                use_ssl=tool.use_ssl,
                 dataset_name = settings.topicset.name,
                 http_auth=http_auth,
                 encode_model=tool.encode_model
@@ -36,6 +38,7 @@ class OpenSearchClientFactory:
                 index_name=tool.index_name,
                 host=tool.host,
                 port=tool.port,
+                use_ssl=tool.use_ssl,
                 dataset_name = settings.topicset.name,
                 http_auth=http_auth,
                 encode_model=tool.encode_model
