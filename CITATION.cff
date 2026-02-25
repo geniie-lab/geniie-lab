@@ -2,8 +2,8 @@ cff-version: 1.2.0
 message: "If you use this software, please cite it as below."
 title: "gennie-lab: A Controlled Experimentation Testbed for Model Search Behaviour"
 type: software
-version: 0.1.1
-date-released: 2025-09-26
+version: 0.1.2
+date-released: 2026-02-25
 url: "https://github.com/geniie-lab/geniie-lab"
 authors:
   - family-names: "Joho"
