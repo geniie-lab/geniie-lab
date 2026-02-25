@@ -20,47 +20,46 @@ from geniie_lab.dataclasses.topic import (
 )
 from geniie_lab.dataclasses.setting import ExperimentSettings, StageConfig
 from geniie_lab.experiments.session_experiment import ExperimentRunner
-import geniie_lab.databridges.amazon_esci.amazon_esci
 
 load_dotenv()
 
 my_settings = ExperimentSettings(
-    name="my_session_experiment",
+    name="my_session_experiment_at_chiir2026",
     task=TaskDescription(
         name = "High-Precision Retrieval",
         description = "Find the most relevant documents at the top rank for a given search topic from a given document collection using a provided search tool.",
         measurement=[ir_measures.nDCG@10, ir_measures.MRR@10],
         start_offset=0,
-        serp_size=10,
+        serp_size=10
     ),
     topicset=TopicDescription(
-        name="custom-amazon-esci/train",
+        name="beir/scidocs",
         type="ir_datasets",
         topic_class=TitleOnlyTopic
     ),
     corpus=CorpusDescription(
-        name="Amazon ESCI",
-        description="A large dataset of difficult search queries, released with the aim of fostering research in the area of semantic matching of queries and products.",
-        index_name="esci_bm25",
+        name="SciDocs",
+        description="A document collection of about 260,000 abstracts of academic papers in medical domain, up to around 2020.",
+        index_name="scidocs_bm25",
     ),
     models=[
         ModelDescription(
-            type="openai",
-            name="gpt-4.1-mini-2025-04-14",
+            type="openrouter",
+            name="openai/gpt-4o-mini",
             system_prompt="You're a helpful assistant",
             temperature=0.0,
-        ),
+        )
     ],
     tools=[
-        # This is a dummy data
         ToolDescription(
             name="opensearch",
             ranking_model="bm25",
-            index_name="esci_bm25",
+            index_name="scidocs_bm25",
             host="localhost",
             port=9200,
+            use_ssl=False,
             description="It allows you to perform searches using keywords only and employs the BM25 ranking model to order results.",
-        ),
+        )
     ],
     stages={
         "query": StageConfig(
@@ -88,7 +87,9 @@ my_settings = ExperimentSettings(
         ),
     },
     plan=["query"],
-    max_topics=5,
+    # plan=["query", "ranking"],
+    # plan=["query", "ranking", "click", "relevance", "reformulate", "ranking"],
+    max_topics=1,
     full_log=False
 )
 

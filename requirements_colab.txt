@@ -1,0 +1,4 @@
+dataclasses_json==0.6.7
+ir_datasets==0.5.10
+ir_measures==0.3.7
+opensearch_py==3.0.0

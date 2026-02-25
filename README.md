@@ -27,3 +27,34 @@ This software is provided "as is", without warranty of any kind, express or impl
 
 If you have any questions or feedback, feel free to reach out:
 - Contact Form: https://joholab.slis.tsukuba.ac.jp/en/contact/
+
+## Publications
+
+Perspective Paper at SIGIR 2025
+
+```
+Hideo Joho and Joemon M Jose. 2025. An Instruction-Response Perspective on
+Large Language Models in Information Retrieval Tasks. In Proceedings of the 
+48th International ACM SIGIR Conference on Research and Development in 
+Information Retrieval (SIGIR '25). Association for Computing Machinery, New 
+York, NY, USA, 3843–3852. https://doi.org/10.1145/3726302.3730346
+```
+
+Resource Paper at SIGIR-AP 2025
+
+```
+Hideo Joho. 2025. Geniie-Lab: A Testbed for Controlled Experimentation of 
+Model Search Behaviour. In Proceedings of the 2025 Annual International ACM 
+SIGIR Conference on Research and Development in Information Retrieval in the 
+Asia Pacific Region (SIGIR-AP 2025). Association for Computing Machinery, New 
+York, NY, USA, 55–63. https://doi.org/10.1145/3767695.3769479
+```
+
+Tutorial Paper at CHIIR 2026
+
+```
+Hideo Joho. 2026. Controlled Experimentation of Model Search Behaviour with 
+Geniie-Lab. In Proceedings of the 2026 ACM SIGIR Conference on Human 
+Information Interaction and Retrieval (CHIIR '26), March 22--26, 2026, 
+Seattle, WA, USA, to appear. https://10.1145/3786304.3787894
+```

@@ -88,6 +88,12 @@ my_settings = ExperimentSettings(
         #     name="openai/gpt-4.1-mini",
         #     system_prompt="You're a helpful assistant",
         #     temperature=0.0,
+        # ),
+        # ModelDescription(
+        #     type="vllm",
+        #     name="gpt-oss-120b",
+        #     system_prompt="You're a helpful assistant",
+        #     temperature=0.0,
         # )
     ],
     tools=[
@@ -95,6 +101,7 @@ my_settings = ExperimentSettings(
             name="opensearch",
             ranking_model="bm25",
             index_name="aquaint_bm25",
+            host="localhost",
             port=9200,
             description="It allows you to perform searches using keywords only and employs the BM25 ranking model to order results.",
         ),
@@ -103,6 +110,7 @@ my_settings = ExperimentSettings(
         #     ranking_model="splade",
         #     encode_model="naver/splade-cocondenser-ensembledistil",
         #     index_name="aquaint_splade",
+        #     host="localhost",
         #     port=9200,
         #     description="It allows you to perform searches using keywords only and employs the SPLADE ranking model to order results.",
         # ),
@@ -111,6 +119,7 @@ my_settings = ExperimentSettings(
         #     ranking_model="dpr",
         #     encode_model="sentence-transformers/msmarco-distilbert-base-tas-b",
         #     index_name="aquaint_dpr",
+        #     host="localhost",
         #     port=9200,
         #     description="It allows you to perform searches using keywords only and employs the DPR ranking model to order results.",
         # ),

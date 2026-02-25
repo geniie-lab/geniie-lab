@@ -56,6 +56,7 @@ class AzureOpenAILLMService:
         self,
         model: str,
         temperature: float,
+        top_p: float,
         memory: ConversationHistory,
         instruction: InstructionWithGenerate,
         response_model: Type[T]
@@ -71,6 +72,7 @@ class AzureOpenAILLMService:
             messages=messages,
             response_format=response_model,
             temperature=temperature,
+            top_p=top_p,
         )
         parsed_response = completion.choices[0].message.parsed
         if parsed_response is None:
@@ -95,23 +97,23 @@ class AzureOpenAILLMService:
                 return limit
         return 4096
 
-    def create_query(self, model: str, temperature: float, memory: ConversationHistory, instruction: QueryFormulationInstruction) -> Query:
+    def create_query(self, model: str, temperature: float, top_p: float, memory: ConversationHistory, instruction: QueryFormulationInstruction) -> Query:
 
-        query = self._call_llm_with_pydantic_response(model, temperature, memory, instruction, Query)
+        query = self._call_llm_with_pydantic_response(model, temperature, top_p, memory, instruction, Query)
         return query
 
-    def recreate_query(self, model: str, temperature: float, memory: ConversationHistory, instruction: QueryReFormulationInstruction) -> Query:
+    def recreate_query(self, model: str, temperature: float, top_p: float, memory: ConversationHistory, instruction: QueryReFormulationInstruction) -> Query:
 
-        query = self._call_llm_with_pydantic_response(model, temperature, memory, instruction, Query)
+        query = self._call_llm_with_pydantic_response(model, temperature, top_p, memory, instruction, Query)
         return query
 
-    def create_clicks(self, model: str, temperature: float, memory: ConversationHistory, instruction: ClickInstruction) -> Clicks:
+    def create_clicks(self, model: str, temperature: float, top_p: float, memory: ConversationHistory, instruction: ClickInstruction) -> Clicks:
 
-        return self._call_llm_with_pydantic_response(model, temperature, memory, instruction, Clicks)
+        return self._call_llm_with_pydantic_response(model, temperature, top_p, memory, instruction, Clicks)
 
-    def calc_relevance_judgement(self, model: str, temperature: float, memory: ConversationHistory, instruction: RelevanceJudgementInstruction) -> RelevanceJudgement:
+    def calc_relevance_judgement(self, model: str, temperature: float, top_p: float, memory: ConversationHistory, instruction: RelevanceJudgementInstruction) -> RelevanceJudgement:
 
-        return self._call_llm_with_pydantic_response(model, temperature, memory, instruction, RelevanceJudgement)
+        return self._call_llm_with_pydantic_response(model, temperature, top_p, memory, instruction, RelevanceJudgement)
 
-    def decide_next_action(self, model: str, temperature: float, memory: ConversationHistory, instruction: NextActionInstruction) -> NextAction:
-        return self._call_llm_with_pydantic_response(model, temperature, memory, instruction, NextAction)
+    def decide_next_action(self, model: str, temperature: float, top_p: float, memory: ConversationHistory, instruction: NextActionInstruction) -> NextAction:
+        return self._call_llm_with_pydantic_response(model, temperature, top_p, memory, instruction, NextAction)

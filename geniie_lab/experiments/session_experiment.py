@@ -1,3 +1,4 @@
+import re
 import sys
 import pprint
 from dataclasses import dataclass
@@ -53,7 +54,7 @@ class QueryFormulationStage:
         instruction_text = self.config.instruction or self.DEFAULT_INSTRUCTION
         qf_instruction = QueryFormulationInstruction(instruction=instruction_text, task=settings.task, corpus=settings.corpus, tool=tool, topic=state.topic)
 
-        state.query = llm_service.create_query(model.name, model.temperature, state.memory, qf_instruction)
+        state.query = llm_service.create_query(model.name, model.temperature, model.top_p, state.memory, qf_instruction)
 
         output = QueryExperimentOutput(
             session_name = settings.name,
@@ -75,10 +76,8 @@ class RankingStage:
     def run(self, settings: ExperimentSettings, state: ExperimentState, llm_service: LLMServiceProtocol, model: ModelDescription, tool: ToolDescription, opensearch_client: OpenSearchClientProtocol) -> ExperimentState:
         print("\n--- Running: Ranking Stage ---", file=sys.stderr)
 
-        query_text = None
-        start_offset = 0
-        query_text = state.query.query
-        start_offset = state.query.start
+        query_text = getattr(state.query, "query", None)
+        start_offset = getattr(state.query, "start", 0)
 
         state.serp = opensearch_client.search_index_with_snippets(query_text, start=start_offset, size=settings.task.serp_size)
         state.docids = [item.docid for item in state.serp.results] if state.serp and state.serp.results else []
@@ -129,7 +128,7 @@ class ClickStage:
         instruction_text = self.config.instruction or self.DEFAULT_INSTRUCTION
         click_instruction = ClickInstruction(instruction=instruction_text, serp=state.serp)
 
-        state.clicks = llm_service.create_clicks(model.name, model.temperature, state.memory, click_instruction)
+        state.clicks = llm_service.create_clicks(model.name, model.temperature, model.top_p, state.memory, click_instruction)
 
         output = ClickExperimentOutput(
             session_name=settings.name,
@@ -184,7 +183,7 @@ class RelevanceJudgementStage:
             instruction_text = self.config.instruction or self.DEFAULT_INSTRUCTION
             rj_instruction = RelevanceJudgementInstruction(instruction=instruction_text, fulltext=state.fulltext)
 
-            state.relevance_judgement = llm_service.calc_relevance_judgement(model.name, model.temperature, state.memory, rj_instruction)
+            state.relevance_judgement = llm_service.calc_relevance_judgement(model.name, model.temperature, model.top_p, state.memory, rj_instruction)
 
             qrel_label = qrels.get(state.topic.id, click_docid, default=0)
 
@@ -220,7 +219,7 @@ class QueryReFormulationStage:
         instruction_text = self.config.instruction or self.DEFAULT_INSTRUCTION
         qrf_instruction = QueryReFormulationInstruction(instruction=instruction_text)
 
-        state.query = llm_service.recreate_query(model.name, model.temperature, state.memory, qrf_instruction)
+        state.query = llm_service.recreate_query(model.name, model.temperature, model.top_p, state.memory,  qrf_instruction)
 
         output = QueryReformulationExperimentOutput(
             session_name = settings.name,
@@ -262,7 +261,35 @@ class ExperimentRunner:
 
         self.llm_factory = LLMServiceFactory()
         self.opensearch_client_factory = OpenSearchClientFactory()
+        self._topic_slice: slice | None = self._resolve_topic_slice()
         self.topics = self._load_topics()
+
+    def _resolve_topic_slice(self) -> slice | None:
+            """
+            Determine which range of topics to load based on ExperimentSettings.
+
+            Priority:
+            1) settings.topic_ids: string like '3:10', ':5', '10:'
+            2) settings.max_topics: integer (legacy)
+            3) None -> no slicing (load all)
+            Uses 0-based, end-exclusive Python semantics.
+            """
+            topic_ids = getattr(self.settings, "topic_ids", None)
+            if topic_ids:
+                if not isinstance(topic_ids, str) or not re.match(r"^\s*\d*\s*:\s*\d*\s*$", topic_ids):
+                    raise ValueError(
+                        f"topic_ids must be a slice-like string 'start:end' (digits optional), got {topic_ids!r}"
+                    )
+                start_str, end_str = topic_ids.split(":")
+                start = int(start_str) - 1 if start_str.strip() else None
+                stop = int(end_str) if end_str.strip() else None
+                return slice(start, stop)
+
+            max_topics = getattr(self.settings, "max_topics", None)
+            if isinstance(max_topics, int):
+                return slice(0, max_topics)
+
+            return None
 
     def _load_topics(self) -> TopicList:
         dataset = ir_datasets.load(self.settings.topicset.name)
@@ -275,8 +302,8 @@ class ExperimentRunner:
         topics = list_cls()
 
         query_iter = dataset.queries_iter()
-        if self.settings.max_topics:
-            query_iter = islice(query_iter, self.settings.max_topics)
+        if self._topic_slice is not None:
+            query_iter = islice(query_iter, self._topic_slice.start, self._topic_slice.stop)
 
         for raw in query_iter:
             topic = topic_cls.from_ir_datasets(raw)

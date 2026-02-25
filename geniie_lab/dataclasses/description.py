@@ -28,7 +28,8 @@ class CorpusDescription:
 class ModelDescription:
     type: str
     name: str
-    temperature: float
+    temperature: Optional[float] = 0.0
+    top_p: Optional[float] = 1.0
     system_prompt: Optional[str] = "You're a helpful assistant"
     system_role: Optional[str] = None
 
@@ -38,5 +39,7 @@ class ToolDescription:
     ranking_model: str
     index_name: str
     description: str
+    host: str = "localhost"
     port: int = 9200
+    use_ssl: bool = True
     encode_model: Optional[str] = None

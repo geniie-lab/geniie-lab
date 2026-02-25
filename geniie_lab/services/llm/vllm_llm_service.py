@@ -25,26 +25,12 @@ class InstructionWithGenerate(Protocol):
     def generate(self) -> str:
         ...
 
-class OpenAILLMService:
-    _MAX_TOKEN_LIMITS = {
-        "gpt-4o":             131072,  # GPT-4o large context
-        "gpt-4o-mini":         8192,
-        "gpt-4-turbo":         8192,
-        "gpt-4.1-mini-2025-04-14": 1000000,
-        "gpt-4.1-mini":        8192,
-        "gpt-4":               8192,
-        "gpt-4-32k":          32768,
-
-        "gpt-3.5-turbo-16k":  16384,
-        "gpt-3.5-turbo":       4096,
-
-        "text-embedding-ada-002": 8191,
-        "text-embedding-3-small": 8191,
-        "text-embedding-3-large": 8191,
-    }
-
+class VllmLLMService:
     def __init__(self):
-        self.client = OpenAI()
+        self.client = OpenAI(
+            base_url="http://localhost:8000/v1",
+            api_key="vllm",  # required, but unused
+        )
 
     def _call_llm_with_pydantic_response(
         self,
@@ -72,24 +58,14 @@ class OpenAILLMService:
         if parsed_response is None:
             raise ValueError(f"LLM returned empty parsed object for {response_model.__name__}.")
         memory.add_assistant_response(completion.choices[0].message.to_json())
-
         return parsed_response
 
     def get_tokenizer(self, model_name: str) -> Callable[[str], int]:
-
-        try:
-            enc = tiktoken.encoding_for_model(model_name)
-        except Exception:
-            enc = tiktoken.get_encoding("cl100k_base")
+        enc = tiktoken.get_encoding("cl100k_base")
         return lambda text: len(enc.encode(text))
 
     def get_max_tokens(self, model_name: str) -> int:
-
-        name = model_name.lower()
-        for prefix, limit in self._MAX_TOKEN_LIMITS.items():
-            if name.startswith(prefix):
-                return limit
-        return 4096
+        return 128000
 
     def create_query(self, model: str, temperature: float, top_p: float, memory: ConversationHistory, instruction: QueryFormulationInstruction) -> Query:
 

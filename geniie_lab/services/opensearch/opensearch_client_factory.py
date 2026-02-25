@@ -17,14 +17,18 @@ class OpenSearchClientFactory:
         if tool.ranking_model == "bm25":
             return OpenSearchClientBM25(
                 index_name=tool.index_name,
+                host=tool.host,
                 port=tool.port,
+                use_ssl=tool.use_ssl,
                 dataset_name = settings.topicset.name,
                 http_auth=http_auth
             )
         elif tool.ranking_model == "splade":
             return OpenSearchClientSplade(
                 index_name=tool.index_name,
+                host=tool.host,
                 port=tool.port,
+                use_ssl=tool.use_ssl,
                 dataset_name = settings.topicset.name,
                 http_auth=http_auth,
                 encode_model=tool.encode_model
@@ -32,7 +36,9 @@ class OpenSearchClientFactory:
         elif tool.ranking_model == "dpr":
             return OpenSearchClientDPR(
                 index_name=tool.index_name,
+                host=tool.host,
                 port=tool.port,
+                use_ssl=tool.use_ssl,
                 dataset_name = settings.topicset.name,
                 http_auth=http_auth,
                 encode_model=tool.encode_model

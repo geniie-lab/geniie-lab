@@ -76,7 +76,7 @@ Set your model name in `ExperimentalSettings` in the runner files in `scripts`
 models=[
     ModelDescription(
         type="openrouter",
-        name="openai/gpt-4.1-miniM",
+        name="openai/gpt-4.1-mini",
         system_prompt="You're a helpful assistant",
         temperature=0.0,
     )
