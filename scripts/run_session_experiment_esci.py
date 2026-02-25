@@ -57,6 +57,7 @@ my_settings = ExperimentSettings(
             name="opensearch",
             ranking_model="bm25",
             index_name="esci_bm25",
+            host="localhost",
             port=9200,
             description="It allows you to perform searches using keywords only and employs the BM25 ranking model to order results.",
         ),

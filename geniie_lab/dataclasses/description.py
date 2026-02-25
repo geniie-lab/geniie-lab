@@ -39,5 +39,6 @@ class ToolDescription:
     ranking_model: str
     index_name: str
     description: str
+    host: str = "localhost"
     port: int = 9200
     encode_model: Optional[str] = None

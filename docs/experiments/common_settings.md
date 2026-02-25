@@ -119,7 +119,8 @@ Note that `tools` in LLM applications have wide scopes of external applications,
 - `name`: Name of search tool
 - `ranking_model`: Name of ranking model used by the tool
 - `index_name`: Name of index files used by the tool
-- `port`: Port number of opensearch client
+- `host`: URL of opensearch server
+- `port`: Port number of opensearch server
 - `description`: Description of the tool, query syntax (if any), and ranking model.
 
 ```python
@@ -128,6 +129,7 @@ Note that `tools` in LLM applications have wide scopes of external applications,
             name="opensearch",
             ranking_model="bm25",
             index_name="aquaint_bm25",
+            host="localhost",
             port=9200,
             description="It allows you to perform searches using keywords only and employs the BM25 ranking model to order results.",
         )
