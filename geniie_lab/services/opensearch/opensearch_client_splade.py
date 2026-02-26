@@ -6,8 +6,7 @@ from typing import List, Union, Optional
 import ir_datasets
 from opensearchpy import OpenSearch
 import torch
-import torch.nn.functional as F
-from transformers import AutoTokenizer, AutoModelForMaskedLM
+from sentence_transformers.sparse_encoder import SparseEncoder
 
 # Local application imports
 from geniie_lab.dataclasses.serp import FullText, SearchResultItem, Serp
@@ -42,46 +41,9 @@ class OpenSearchClientSplade:
 
         self.encode_model = encode_model
         model_name = self.encode_model or "naver/splade-cocondenser-ensembledistil"
-        self.model = AutoModelForMaskedLM.from_pretrained(model_name)
-        self.tokenizer = AutoTokenizer.from_pretrained(model_name)
-        self.model.eval()
+        self.model = SparseEncoder(model_name, trust_remote_code=True)
         if torch.cuda.is_available():
             self.model.cuda()
-
-    @torch.no_grad()
-    def splade_encode_to_bow(self, text, tokenizer, model, max_doc_length=512, top_k=30):
-        """
-        Encode input text using SPLADE and return a weighted BoW string.
-
-        :param text: input string (document or chunk)
-        :param tokenizer: HuggingFace tokenizer
-        :param model: SPLADE model (masked LM)
-        :param max_doc_length: max input tokens (SPLADE supports long input)
-        :param top_k: number of top tokens to keep by weight
-        :return: string of repeated tokens (weighted BoW)
-        """
-        inputs = tokenizer(text, return_tensors="pt", truncation=True, max_length=max_doc_length)
-        inputs = {k: v.cuda() for k, v in inputs.items()}
-
-        outputs = model(**inputs)
-        logits = outputs.logits.squeeze(0)  # [seq_len, vocab_size]
-
-        # Apply log1p(ReLU(x)) to each token dimension (SPLADE's sparse activation trick)
-        sparse_weights = torch.log1p(F.relu(logits)).max(dim=0).values  # [vocab_size]
-
-        # Get top-k weighted vocab terms
-        topk = torch.topk(sparse_weights, k=top_k)
-        token_ids = topk.indices.tolist()
-        weights = topk.values.tolist()
-
-        # Build weighted term list: repeat each token according to its weight
-        bow_tokens = []
-        for token_id, weight in zip(token_ids, weights):
-            token = tokenizer.convert_ids_to_tokens(token_id)
-            repeat_count = max(1, int(round(weight)))
-            bow_tokens.extend([token] * repeat_count)
-
-        return " ".join(bow_tokens)
 
     @staticmethod
     def clean_text(text: str) -> str:
@@ -105,20 +67,21 @@ class OpenSearchClientSplade:
         start: int = 0,
         size: int = 10
     ) -> Serp:
-        bow_query = self.splade_encode_to_bow(query, self.tokenizer, self.model)
+        query_tensor = self.model.encode_query([query])
+        query_embedding = self.model.decode(query_tensor)
         search_body = {
             "from": start,
             "size": size,
             "query": {
-                "match": {
-                    "splade_text": {
-                        "query": bow_query
+                "neural_sparse": {
+                    "sparse_embedding": {
+                        "query_tokens": dict(query_embedding[0])
                     }
                 }
             },
             "highlight": {
                 "fields": {
-                    "splade_text": {
+                    "text": {
                         "type": "plain",
                         "fragment_size": 150,
                         "number_of_fragments": 1
@@ -133,7 +96,7 @@ class OpenSearchClientSplade:
         items: List[SearchResultItem] = []
         for idx, hit in enumerate(response.get("hits", {}).get("hits", []), start=1):
             src = hit.get("_source", {})
-            raw_snippets = hit.get("highlight", {}).get("splade_text", [src.get("text", "")[:150]])
+            raw_snippets = hit.get("highlight", {}).get("text", [src.get("text", "")[:150]])
             snippet_text = " ... ".join(self.clean_text(s) for s in raw_snippets)
             items.append(SearchResultItem(
                 ranking=start + idx,
