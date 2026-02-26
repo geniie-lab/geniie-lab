@@ -56,5 +56,5 @@ Tutorial Paper at CHIIR 2026
 Hideo Joho. 2026. Controlled Experimentation of Model Search Behaviour with 
 Geniie-Lab. In Proceedings of the 2026 ACM SIGIR Conference on Human 
 Information Interaction and Retrieval (CHIIR '26), March 22--26, 2026, 
-Seattle, WA, USA, to appear. https://10.1145/3786304.3787894
+Seattle, WA, USA, to appear. https://doi.org/10.1145/3786304.3787894
 ```
