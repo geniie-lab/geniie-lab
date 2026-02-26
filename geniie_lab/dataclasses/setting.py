@@ -36,6 +36,7 @@ class ExperimentSettings:
     loop_num_per_topic: int = 1
     plan: Optional[List[str]] = None  # List of stage names to execute in order
     max_topics: Optional[int] = None # None means all topics
+    topic_ids: Optional[str] = None # e.g. "1:10"
     max_actions: Optional[int] = None
     custom_settings: Optional[str] = None
     full_log: Optional[bool] = False
