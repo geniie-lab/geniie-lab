@@ -45,7 +45,8 @@ class OpenSearchClientBM25:
     def fetch_fulltext(self, docid: str) -> Union[FullText, Error]:
         try:
             self.docstore = self.dataset.docs_store()
-            text = self.docstore.get(docid).text 
+            doc = self.docstore.get(docid)
+            text = getattr(doc, 'text', None) or getattr(doc, 'body', None) or '' 
             return FullText(
                 docid = docid,
                 text = self.clean_text(text)

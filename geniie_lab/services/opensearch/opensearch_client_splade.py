@@ -6,7 +6,7 @@ from typing import List, Union, Optional
 import ir_datasets
 from opensearchpy import OpenSearch
 import torch
-from sentence_transformers.sparse_encoder import SparseEncoder
+from sentence_transformers import SparseEncoder
 
 # Local application imports
 from geniie_lab.dataclasses.serp import FullText, SearchResultItem, Serp
@@ -53,7 +53,8 @@ class OpenSearchClientSplade:
     def fetch_fulltext(self, docid: str) -> Union[FullText, Error]:
         try:
             self.docstore = self.dataset.docs_store()
-            text = self.docstore.get(docid).text 
+            doc = self.docstore.get(docid)
+            text = getattr(doc, 'text', None) or getattr(doc, 'body', None) or '' 
             return FullText(
                 docid = docid,
                 text = self.clean_text(text)
