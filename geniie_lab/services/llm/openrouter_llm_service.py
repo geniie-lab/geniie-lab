@@ -27,22 +27,24 @@ class InstructionWithGenerate(Protocol):
         ...
 
 class OpenRouterLLMService:
-    _MAX_TOKEN_LIMITS = {
-        "gpt-4o":             131072,  # GPT-4o large context
-        "gpt-4o-mini":         8192,
-        "gpt-4-turbo":         8192,
-        "gpt-4.1-mini-2025-04-14": 1000000,
-        "gpt-4.1-mini":        8192,
-        "gpt-4":               8192,
-        "gpt-4-32k":          32768,
+    # _MAX_TOKEN_LIMITS = {
+    #     "gpt-4o":             131072,  # GPT-4o large context
+    #     "gpt-4-turbo":         8192,
+    #     "gpt-4.1-mini-2025-04-14": 100000,
+    #     "gpt-4.1-mini":        8192,
+    #     "gpt-4":               8192,
+    #     "gpt-4-32k":          32768,
 
-        "gpt-3.5-turbo-16k":  16384,
-        "gpt-3.5-turbo":       4096,
+    #     "gpt-3.5-turbo-16k":  16384,
+    #     "gpt-3.5-turbo":       4096,
 
-        "text-embedding-ada-002": 8191,
-        "text-embedding-3-small": 8191,
-        "text-embedding-3-large": 8191,
-    }
+    #     "text-embedding-ada-002": 8191,
+    #     "text-embedding-3-small": 8191,
+    #     "text-embedding-3-large": 8191,
+
+    #     "gpt-4o-mini":         100000,
+    #     "gemini-2.5-flash-lite": 850000,
+    # }
 
     def __init__(self):
         load_dotenv()
@@ -54,6 +56,7 @@ class OpenRouterLLMService:
     def _call_llm_with_pydantic_response(
         self,
         model: str,
+        token_length: int,
         temperature: float,
         top_p: float,
         memory: ConversationHistory,
@@ -62,7 +65,7 @@ class OpenRouterLLMService:
     ) -> T:
 
         memory.add_user_message(instruction.generate())
-        messages_dicts: list[dict[str, str]] = memory.get_messages(tokenizer=self.get_tokenizer(model), max_tokens=self.get_max_tokens(model))
+        messages_dicts: list[dict[str, str]] = memory.get_messages(tokenizer=self.get_tokenizer(model), max_tokens=token_length)
         messages: list[ChatCompletionUserMessageParam] = [
             ChatCompletionUserMessageParam(role="user", content=msg["content"]) for msg in messages_dicts
         ]
@@ -88,31 +91,31 @@ class OpenRouterLLMService:
             enc = tiktoken.get_encoding("cl100k_base")
         return lambda text: len(enc.encode(text))
 
-    def get_max_tokens(self, model_name: str) -> int:
+    # def get_max_tokens(self, model_name: str) -> int:
 
-        name = model_name.lower()
-        for prefix, limit in self._MAX_TOKEN_LIMITS.items():
-            if name.startswith(prefix):
-                return limit
-        return 4096
+    #     name = model_name.lower()
+    #     for prefix, limit in self._MAX_TOKEN_LIMITS.items():
+    #         if name.startswith(prefix):
+    #             return limit
+    #     return 4096
 
-    def create_query(self, model: str, temperature: float, top_p: float, memory: ConversationHistory, instruction: QueryFormulationInstruction) -> Query:
+    def create_query(self, model: str, token_length: int, temperature: float, top_p: float, memory: ConversationHistory, instruction: QueryFormulationInstruction) -> Query:
 
-        query = self._call_llm_with_pydantic_response(model, temperature, top_p, memory, instruction, Query)
+        query = self._call_llm_with_pydantic_response(model, token_length, temperature, top_p, memory, instruction, Query)
         return query
 
-    def recreate_query(self, model: str, temperature: float, top_p: float, memory: ConversationHistory, instruction: QueryReFormulationInstruction) -> Query:
+    def recreate_query(self, model: str, token_length: int, temperature: float, top_p: float, memory: ConversationHistory, instruction: QueryReFormulationInstruction) -> Query:
 
-        query = self._call_llm_with_pydantic_response(model, temperature, top_p, memory, instruction, Query)
+        query = self._call_llm_with_pydantic_response(model, token_length, temperature, top_p, memory, instruction, Query)
         return query
 
-    def create_clicks(self, model: str, temperature: float, top_p: float, memory: ConversationHistory, instruction: ClickInstruction) -> Clicks:
+    def create_clicks(self, model: str, token_length: int, temperature: float, top_p: float, memory: ConversationHistory, instruction: ClickInstruction) -> Clicks:
 
-        return self._call_llm_with_pydantic_response(model, temperature, top_p, memory, instruction, Clicks)
+        return self._call_llm_with_pydantic_response(model, token_length, temperature, top_p, memory, instruction, Clicks)
 
-    def calc_relevance_judgement(self, model: str, temperature: float, top_p: float, memory: ConversationHistory, instruction: RelevanceJudgementInstruction) -> RelevanceJudgement:
+    def calc_relevance_judgement(self, model: str, token_length: int, temperature: float, top_p: float, memory: ConversationHistory, instruction: RelevanceJudgementInstruction) -> RelevanceJudgement:
 
-        return self._call_llm_with_pydantic_response(model, temperature, top_p, memory, instruction, RelevanceJudgement)
+        return self._call_llm_with_pydantic_response(model, token_length, temperature, top_p, memory, instruction, RelevanceJudgement)
 
-    def decide_next_action(self, model: str, temperature: float, top_p: float, memory: ConversationHistory, instruction: NextActionInstruction) -> NextAction:
-        return self._call_llm_with_pydantic_response(model, temperature, top_p, memory, instruction, NextAction)
+    def decide_next_action(self, model: str, token_length: int, temperature: float, top_p: float, memory: ConversationHistory, instruction: NextActionInstruction) -> NextAction:
+        return self._call_llm_with_pydantic_response(model, token_length, temperature, top_p, memory, instruction, NextAction)
