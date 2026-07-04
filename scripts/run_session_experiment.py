@@ -90,6 +90,12 @@ my_settings = ExperimentSettings(
         #     temperature=0.0,
         # ),
         # ModelDescription(
+        #     type="groq",
+        #     name="openai/gpt-oss-120b",
+        #     system_prompt="You're a helpful assistant",
+        #     temperature=0.0,
+        # ),
+        # ModelDescription(
         #     type="vllm",
         #     name="gpt-oss-120b",
         #     system_prompt="You're a helpful assistant",
