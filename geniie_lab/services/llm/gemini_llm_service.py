@@ -1,7 +1,7 @@
 # Standard library
 import json
 import os
-from typing import Any, Callable, Dict, List, Protocol, Type, TypeVar
+from typing import Any, Callable, Dict, List, Protocol, Tuple, Type, TypeVar
 
 # Third-party libraries
 from dotenv import load_dotenv
@@ -34,16 +34,18 @@ class GeminiLLMService:
     def _call_llm_and_parse(
         self,
         model: str,
+        token_length: int,
         temperature: float,
+        top_p: float,
         memory: ConversationHistory,
         instruction: InstructionWithGenerate,
         response_model: Type[T]
-    ) -> T:
+    ) -> Tuple[T, int]:
 
         memory.add_user_message(instruction.generate())
         openai_messages = memory.get_messages(
             tokenizer=self.get_tokenizer(model),
-            max_tokens=self.get_max_tokens(model)
+            max_tokens=token_length
         )
 
         system_prompt = openai_messages[0]['content'] if openai_messages and openai_messages[0]['role'] == 'system' else None
@@ -61,6 +63,7 @@ class GeminiLLMService:
             config=types.GenerateContentConfig(
                 system_instruction=system_prompt,
                 temperature=temperature,
+                top_p=top_p,
                 response_mime_type="application/json",
                 response_schema=response_model,
             ),
@@ -69,7 +72,11 @@ class GeminiLLMService:
             raise ValueError(f"Response text is None for {response_model.__name__}.")
         memory.add_assistant_response(response.text)
         data = json.loads(response.text)
-        return response_model(**data)
+
+        usage = getattr(response, "usage_metadata", None)
+        total_token = getattr(usage, "total_token_count", 0) or 0
+
+        return response_model(**data), total_token
 
     def get_tokenizer(self, model_name: str) -> Callable[[str], int]:
         def count_fn(text: str) -> int:
@@ -80,26 +87,23 @@ class GeminiLLMService:
             return token_count
         return count_fn
 
-    def get_max_tokens(self, model_name: str) -> int:
-        return 1_048_576
+    def create_query(self, model: str, token_length: int, temperature: float, top_p: float, memory: ConversationHistory, instruction: QueryFormulationInstruction ) -> Tuple[Query, int]:
 
-    def create_query(self, model: str, temperature: float, memory: ConversationHistory, instruction: QueryFormulationInstruction ) -> Query:
-
-        query = self._call_llm_and_parse(model, temperature, memory, instruction, Query)
+        query = self._call_llm_and_parse(model, token_length, temperature, top_p, memory, instruction, Query)
         return query
 
-    def recreate_query(self, model: str, temperature: float, memory: ConversationHistory, instruction: QueryReFormulationInstruction) -> Query:
+    def recreate_query(self, model: str, token_length: int, temperature: float, top_p: float, memory: ConversationHistory, instruction: QueryReFormulationInstruction) -> Tuple[Query, int]:
 
-        query = self._call_llm_and_parse(model, temperature, memory, instruction, Query)
+        query = self._call_llm_and_parse(model, token_length, temperature, top_p, memory, instruction, Query)
         return query
 
-    def create_clicks(self, model: str, temperature: float, memory: ConversationHistory, instruction: ClickInstruction) -> Clicks:
+    def create_clicks(self, model: str, token_length: int, temperature: float, top_p: float, memory: ConversationHistory, instruction: ClickInstruction) -> Tuple[Clicks, int]:
 
-        return self._call_llm_and_parse(model, temperature, memory, instruction, Clicks)
+        return self._call_llm_and_parse(model, token_length, temperature, top_p, memory, instruction, Clicks)
 
-    def calc_relevance_judgement(self, model: str, temperature: float, memory: ConversationHistory, instruction: RelevanceJudgementInstruction) -> RelevanceJudgement:
+    def calc_relevance_judgement(self, model: str, token_length: int, temperature: float, top_p: float, memory: ConversationHistory, instruction: RelevanceJudgementInstruction) -> Tuple[RelevanceJudgement, int]:
 
-        return self._call_llm_and_parse(model, temperature, memory, instruction, RelevanceJudgement)
+        return self._call_llm_and_parse(model, token_length, temperature, top_p, memory, instruction, RelevanceJudgement)
 
-    def decide_next_action(self, model: str, temperature: float, memory: ConversationHistory, instruction: NextActionInstruction) -> NextAction:
-        return self._call_llm_and_parse(model, temperature, memory, instruction, NextAction)
+    def decide_next_action(self, model: str, token_length: int, temperature: float, top_p: float, memory: ConversationHistory, instruction: NextActionInstruction) -> Tuple[NextAction, int]:
+        return self._call_llm_and_parse(model, token_length, temperature, top_p, memory, instruction, NextAction)

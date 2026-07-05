@@ -1,4 +1,5 @@
 # Standard library
+import os
 from typing import Callable, Protocol, Tuple, Type, TypeVar
 
 # Third-party libraries
@@ -25,11 +26,13 @@ class InstructionWithGenerate(Protocol):
     def generate(self) -> str:
         ...
 
-class OllamaLLMService:
+class GroqLLMService:
+
     def __init__(self):
+        load_dotenv()
         self.client = OpenAI(
-            base_url="http://localhost:11434/v1",
-            api_key="ollama",  # required, but unused
+            base_url="https://api.groq.com/openai/v1",
+            api_key=os.getenv("GROQ_API_KEY")
         )
 
     def _call_llm_with_pydantic_response(
@@ -66,7 +69,11 @@ class OllamaLLMService:
         return parsed_response, total_token
 
     def get_tokenizer(self, model_name: str) -> Callable[[str], int]:
-        enc = tiktoken.get_encoding("cl100k_base")
+
+        try:
+            enc = tiktoken.encoding_for_model(model_name)
+        except Exception:
+            enc = tiktoken.get_encoding("cl100k_base")
         return lambda text: len(enc.encode(text))
 
     def create_query(self, model: str, token_length: int, temperature: float, top_p: float, memory: ConversationHistory, instruction: QueryFormulationInstruction) -> Tuple[Query, int]:

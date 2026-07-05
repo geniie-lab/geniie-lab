@@ -93,18 +93,22 @@ my_settings = ExperimentSettings(
 
 ## Model Description
 
-- `type`: LLM types. Currently it accepts `openai`, `azure`, `gemini`, `openrouter`, or `ollama`
+- `type`: LLM types. Currently it accepts `openai`, `azure`, `gemini`, `openrouter`, `groq`, `vllm`, or `ollama`
 - `name`: Name of the model
+- `token_length`: Maximum input context length (in tokens) of the model. **Required** — set it to your model's max input token length. The conversation history is trimmed to fit within this budget.
 - `system_prompt`: A system (development) prompt
 - `temperature`: Temerature of the model (Default: 0.0)
+- `top_p`: Nucleus (top-p) sampling probability, applied consistently across all LLM types (Default: 1.0)
 
 ```python
     models=[
         ModelDescription(
             type="openai",
             name="gpt-4.1-mini-2025-04-14",
+            token_length=1000000,  # set to your model's max input token length
             system_prompt="You're a helpful assistant",
             temperature=0.0,
+            top_p=1.0,
         )
     ]
 ```
@@ -176,11 +180,13 @@ Each stage has a name such as `query`, `ranking`, or `click`, and you can config
 ## Other optional settings
 
 - `max_topics`: Define how many topics in the dataset to be processed in the experiment. If you set to 1, it will execute the first topic (or questions or query) in the dataset. If you set to `None`, the experiment will be run on all topics. Default: `None`
+- `topic_ids`: Define subset of topics in a slice manner. For example, `topic_ids="2:5"` will use from the 2nd to 5th topics in the dataset. Default: `None`
 - `full_log`: Define whether or not a full interaction log with LLMs is produced at the end of each topic. Useful for debugging purpose. Make sure to catch STDERR to save the full log. Default: `False`. Alternatively, you can set the log level to `DEBUG` in the logger defined at the beginning of the runner scripts in `scripts` folder.
 - `custom_settings`: A variable to store any arbitary strings to note for an experiment (e.g., specific parameter settings). It will be included in the outputs but not to present to GII. Default: `None`
 
 ```python
     max_topics=1,
+    topic_ids="2:5",
     full_log=False,
     custom_settings=None
 ```
