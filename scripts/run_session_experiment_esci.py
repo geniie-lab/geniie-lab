@@ -50,6 +50,7 @@ my_settings = ExperimentSettings(
             token_length=1000000,  # set to your model's max input token length
             system_prompt="You're a helpful assistant",
             temperature=0.0,
+            top_p=1.0,
         ),
     ],
     tools=[
