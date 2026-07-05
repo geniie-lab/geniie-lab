@@ -108,7 +108,7 @@ class OpenSearchClientDPR:
         start: int = 0,
         size: int = 10
     ) -> Serp:
-        query_vector = self.model.encode(query).tolist()
+        query_vector = self.model.encode_query(query).tolist()
         search_body = {
             "from": start,
             "size": size,
