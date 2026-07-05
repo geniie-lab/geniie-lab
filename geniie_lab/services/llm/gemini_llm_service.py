@@ -34,6 +34,7 @@ class GeminiLLMService:
     def _call_llm_and_parse(
         self,
         model: str,
+        token_length: int,
         temperature: float,
         memory: ConversationHistory,
         instruction: InstructionWithGenerate,
@@ -43,7 +44,7 @@ class GeminiLLMService:
         memory.add_user_message(instruction.generate())
         openai_messages = memory.get_messages(
             tokenizer=self.get_tokenizer(model),
-            max_tokens=self.get_max_tokens(model)
+            max_tokens=token_length
         )
 
         system_prompt = openai_messages[0]['content'] if openai_messages and openai_messages[0]['role'] == 'system' else None
@@ -84,26 +85,23 @@ class GeminiLLMService:
             return token_count
         return count_fn
 
-    def get_max_tokens(self, model_name: str) -> int:
-        return 1_048_576
+    def create_query(self, model: str, token_length: int, temperature: float, memory: ConversationHistory, instruction: QueryFormulationInstruction ) -> Tuple[Query, int]:
 
-    def create_query(self, model: str, temperature: float, memory: ConversationHistory, instruction: QueryFormulationInstruction ) -> Tuple[Query, int]:
-
-        query = self._call_llm_and_parse(model, temperature, memory, instruction, Query)
+        query = self._call_llm_and_parse(model, token_length, temperature, memory, instruction, Query)
         return query
 
-    def recreate_query(self, model: str, temperature: float, memory: ConversationHistory, instruction: QueryReFormulationInstruction) -> Tuple[Query, int]:
+    def recreate_query(self, model: str, token_length: int, temperature: float, memory: ConversationHistory, instruction: QueryReFormulationInstruction) -> Tuple[Query, int]:
 
-        query = self._call_llm_and_parse(model, temperature, memory, instruction, Query)
+        query = self._call_llm_and_parse(model, token_length, temperature, memory, instruction, Query)
         return query
 
-    def create_clicks(self, model: str, temperature: float, memory: ConversationHistory, instruction: ClickInstruction) -> Tuple[Clicks, int]:
+    def create_clicks(self, model: str, token_length: int, temperature: float, memory: ConversationHistory, instruction: ClickInstruction) -> Tuple[Clicks, int]:
 
-        return self._call_llm_and_parse(model, temperature, memory, instruction, Clicks)
+        return self._call_llm_and_parse(model, token_length, temperature, memory, instruction, Clicks)
 
-    def calc_relevance_judgement(self, model: str, temperature: float, memory: ConversationHistory, instruction: RelevanceJudgementInstruction) -> Tuple[RelevanceJudgement, int]:
+    def calc_relevance_judgement(self, model: str, token_length: int, temperature: float, memory: ConversationHistory, instruction: RelevanceJudgementInstruction) -> Tuple[RelevanceJudgement, int]:
 
-        return self._call_llm_and_parse(model, temperature, memory, instruction, RelevanceJudgement)
+        return self._call_llm_and_parse(model, token_length, temperature, memory, instruction, RelevanceJudgement)
 
-    def decide_next_action(self, model: str, temperature: float, memory: ConversationHistory, instruction: NextActionInstruction) -> Tuple[NextAction, int]:
-        return self._call_llm_and_parse(model, temperature, memory, instruction, NextAction)
+    def decide_next_action(self, model: str, token_length: int, temperature: float, memory: ConversationHistory, instruction: NextActionInstruction) -> Tuple[NextAction, int]:
+        return self._call_llm_and_parse(model, token_length, temperature, memory, instruction, NextAction)

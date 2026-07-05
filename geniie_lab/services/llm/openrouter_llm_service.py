@@ -27,24 +27,6 @@ class InstructionWithGenerate(Protocol):
         ...
 
 class OpenRouterLLMService:
-    # _MAX_TOKEN_LIMITS = {
-    #     "gpt-4o":             131072,  # GPT-4o large context
-    #     "gpt-4-turbo":         8192,
-    #     "gpt-4.1-mini-2025-04-14": 100000,
-    #     "gpt-4.1-mini":        8192,
-    #     "gpt-4":               8192,
-    #     "gpt-4-32k":          32768,
-
-    #     "gpt-3.5-turbo-16k":  16384,
-    #     "gpt-3.5-turbo":       4096,
-
-    #     "text-embedding-ada-002": 8191,
-    #     "text-embedding-3-small": 8191,
-    #     "text-embedding-3-large": 8191,
-
-    #     "gpt-4o-mini":         100000,
-    #     "gemini-2.5-flash-lite": 850000,
-    # }
 
     def __init__(self):
         load_dotenv()
@@ -93,14 +75,6 @@ class OpenRouterLLMService:
         except Exception:
             enc = tiktoken.get_encoding("cl100k_base")
         return lambda text: len(enc.encode(text))
-
-    # def get_max_tokens(self, model_name: str) -> int:
-
-    #     name = model_name.lower()
-    #     for prefix, limit in self._MAX_TOKEN_LIMITS.items():
-    #         if name.startswith(prefix):
-    #             return limit
-    #     return 4096
 
     def create_query(self, model: str, token_length: int, temperature: float, top_p: float, memory: ConversationHistory, instruction: QueryFormulationInstruction) -> Tuple[Query, int]:
 
