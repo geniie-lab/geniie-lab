@@ -54,7 +54,7 @@ class QueryFormulationStage:
         instruction_text = self.config.instruction or self.DEFAULT_INSTRUCTION
         qf_instruction = QueryFormulationInstruction(instruction=instruction_text, task=settings.task, corpus=settings.corpus, tool=tool, topic=state.topic)
 
-        state.query = llm_service.create_query(model.name, model.token_length, model.temperature, model.top_p, state.memory, qf_instruction)
+        state.query, total_token = llm_service.create_query(model.name, model.token_length, model.temperature, model.top_p, state.memory, qf_instruction)
 
         output = QueryExperimentOutput(
             session_name = settings.name,
@@ -64,7 +64,8 @@ class QueryFormulationStage:
             topic_id = state.topic.id,
             query = state.query.query,
             start = settings.task.start_offset,
-            size = settings.task.serp_size
+            size = settings.task.serp_size,
+            total_token = total_token
         )
         print(output.to_json(ensure_ascii=False))
         return state
@@ -128,7 +129,7 @@ class ClickStage:
         instruction_text = self.config.instruction or self.DEFAULT_INSTRUCTION
         click_instruction = ClickInstruction(instruction=instruction_text, serp=state.serp)
 
-        state.clicks = llm_service.create_clicks(model.name, model.token_length, model.temperature, model.top_p, state.memory, click_instruction)
+        state.clicks, total_token = llm_service.create_clicks(model.name, model.token_length, model.temperature, model.top_p, state.memory, click_instruction)
 
         output = ClickExperimentOutput(
             session_name=settings.name,
@@ -136,7 +137,8 @@ class ClickStage:
             task=settings.task.name,
             dataset=settings.topicset.name,
             topic_id=state.topic.id,
-            rankings=state.clicks.ranking_list
+            rankings=state.clicks.ranking_list,
+            total_token=total_token
         )
         print(output.to_json(ensure_ascii=False))
 
@@ -183,7 +185,7 @@ class RelevanceJudgementStage:
             instruction_text = self.config.instruction or self.DEFAULT_INSTRUCTION
             rj_instruction = RelevanceJudgementInstruction(instruction=instruction_text, fulltext=state.fulltext)
 
-            state.relevance_judgement = llm_service.calc_relevance_judgement(model.name, model.token_length, model.temperature, model.top_p, state.memory, rj_instruction)
+            state.relevance_judgement, total_token = llm_service.calc_relevance_judgement(model.name, model.token_length, model.temperature, model.top_p, state.memory, rj_instruction)
 
             qrel_label = qrels.get(state.topic.id, click_docid, default=0)
 
@@ -195,7 +197,8 @@ class RelevanceJudgementStage:
                 topic_id = state.topic.id,
                 docid = click_docid,
                 label = f"{state.relevance_judgement.label}",
-                qrel_label=qrel_label
+                qrel_label=qrel_label,
+                total_token=total_token
             )
             print(output.to_json(ensure_ascii=False))
 
@@ -219,7 +222,7 @@ class QueryReFormulationStage:
         instruction_text = self.config.instruction or self.DEFAULT_INSTRUCTION
         qrf_instruction = QueryReFormulationInstruction(instruction=instruction_text)
 
-        state.query = llm_service.recreate_query(model.name, model.token_length, model.temperature, model.top_p, state.memory,  qrf_instruction)
+        state.query, total_token = llm_service.recreate_query(model.name, model.token_length, model.temperature, model.top_p, state.memory,  qrf_instruction)
 
         output = QueryReformulationExperimentOutput(
             session_name = settings.name,
@@ -229,7 +232,8 @@ class QueryReFormulationStage:
             topic_id = state.topic.id,
             query = state.query.query,
             start = settings.task.start_offset,
-            size=settings.task.serp_size
+            size=settings.task.serp_size,
+            total_token=total_token
         )
         print(output.to_json(ensure_ascii=False))
 
