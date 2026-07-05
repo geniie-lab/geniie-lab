@@ -37,6 +37,7 @@ class OllamaLLMService:
         model: str,
         token_length: int,
         temperature: float,
+        top_p: float,
         memory: ConversationHistory,
         instruction: InstructionWithGenerate,
         response_model: Type[T]
@@ -52,6 +53,7 @@ class OllamaLLMService:
             messages=messages,
             response_format=response_model,
             temperature=temperature,
+            top_p=top_p,
         )
         parsed_response = completion.choices[0].message.parsed
         if parsed_response is None:
@@ -67,23 +69,23 @@ class OllamaLLMService:
         enc = tiktoken.get_encoding("cl100k_base")
         return lambda text: len(enc.encode(text))
 
-    def create_query(self, model: str, token_length: int, temperature: float, memory: ConversationHistory, instruction: QueryFormulationInstruction) -> Tuple[Query, int]:
+    def create_query(self, model: str, token_length: int, temperature: float, top_p: float, memory: ConversationHistory, instruction: QueryFormulationInstruction) -> Tuple[Query, int]:
 
-        query = self._call_llm_with_pydantic_response(model, token_length, temperature, memory, instruction, Query)
+        query = self._call_llm_with_pydantic_response(model, token_length, temperature, top_p, memory, instruction, Query)
         return query
 
-    def recreate_query(self, model: str, token_length: int, temperature: float, memory: ConversationHistory, instruction: QueryReFormulationInstruction) -> Tuple[Query, int]:
+    def recreate_query(self, model: str, token_length: int, temperature: float, top_p: float, memory: ConversationHistory, instruction: QueryReFormulationInstruction) -> Tuple[Query, int]:
 
-        query = self._call_llm_with_pydantic_response(model, token_length, temperature, memory, instruction, Query)
+        query = self._call_llm_with_pydantic_response(model, token_length, temperature, top_p, memory, instruction, Query)
         return query
 
-    def create_clicks(self, model: str, token_length: int, temperature: float, memory: ConversationHistory, instruction: ClickInstruction) -> Tuple[Clicks, int]:
+    def create_clicks(self, model: str, token_length: int, temperature: float, top_p: float, memory: ConversationHistory, instruction: ClickInstruction) -> Tuple[Clicks, int]:
 
-        return self._call_llm_with_pydantic_response(model, token_length, temperature, memory, instruction, Clicks)
+        return self._call_llm_with_pydantic_response(model, token_length, temperature, top_p, memory, instruction, Clicks)
 
-    def calc_relevance_judgement(self, model: str, token_length: int, temperature: float, memory: ConversationHistory, instruction: RelevanceJudgementInstruction) -> Tuple[RelevanceJudgement, int]:
+    def calc_relevance_judgement(self, model: str, token_length: int, temperature: float, top_p: float, memory: ConversationHistory, instruction: RelevanceJudgementInstruction) -> Tuple[RelevanceJudgement, int]:
 
-        return self._call_llm_with_pydantic_response(model, token_length, temperature, memory, instruction, RelevanceJudgement)
+        return self._call_llm_with_pydantic_response(model, token_length, temperature, top_p, memory, instruction, RelevanceJudgement)
 
-    def decide_next_action(self, model: str, token_length: int, temperature: float, memory: ConversationHistory, instruction: NextActionInstruction) -> Tuple[NextAction, int]:
-        return self._call_llm_with_pydantic_response(model, token_length, temperature, memory, instruction, NextAction)
+    def decide_next_action(self, model: str, token_length: int, temperature: float, top_p: float, memory: ConversationHistory, instruction: NextActionInstruction) -> Tuple[NextAction, int]:
+        return self._call_llm_with_pydantic_response(model, token_length, temperature, top_p, memory, instruction, NextAction)

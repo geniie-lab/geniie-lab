@@ -21,6 +21,7 @@ The following parameters can be configured via `ExperimentSettings` in the runne
 |Model|All|`token_length`|1000000|Maximum input context length (in tokens) of the model. Required. The conversation history is trimmed to fit within this budget. Set it to your model's max input token length.|
 |Model|All|`system_prompt`|You're a helpful assistant|A system (development) prompt|
 |Model|All|`temperature`|0.0|Temerature of the model (Default: 0.0)|
+|Model|All|`top_p`|1.0|Nucleus (top-p) sampling probability, applied consistently across all LLM types (Default: 1.0)|
 |Tool|All|`name`|opensearch|Name of search tool|
 |Tool|All|`ranking_model`|bm25|Name of ranking model used by the tool|
 |Tool|All|`index_name`|aquaint_bm25|Name of index files used by the tool|

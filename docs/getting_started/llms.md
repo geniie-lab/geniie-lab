@@ -8,7 +8,7 @@ Set `OPENAI_API_KEY` in `.env` file
 OPENAI_API_KEY="[your key]"
 ```
 
-Set your model name in `ExperimentalSettings` in the runner files in `scripts`. You must also set `token_length` (your model's max input token length); the `system_prompt` and `temperature` are optional.
+Set your model name in `ExperimentalSettings` in the runner files in `scripts`. You must also set `token_length` (your model's max input token length); the `system_prompt`, `temperature`, and `top_p` are optional.
 
 ```
 models=[
@@ -18,6 +18,7 @@ models=[
         token_length=1000000,  # set to your model's max input token length
         system_prompt="You're a helpful assistant",
         temperature=0.0,
+        top_p=1.0,
     )
 ```
 
@@ -31,7 +32,7 @@ AZURE_ENDPOINT="[your endpoint]"
 AZURE_API_KEY="[your key]"
 ```
 
-Set your model name in `ExperimentalSettings` in the runner files in `scripts`. You must also set `token_length` (your model's max input token length); the `system_prompt` and `temperature` are optional.
+Set your model name in `ExperimentalSettings` in the runner files in `scripts`. You must also set `token_length` (your model's max input token length); the `system_prompt`, `temperature`, and `top_p` are optional.
 
 ```
 models=[
@@ -41,6 +42,7 @@ models=[
         token_length=1000000,  # set to your model's max input token length
         system_prompt="You're a helpful assistant",
         temperature=0.0,
+        top_p=1.0,
     )
 ```
 
@@ -62,6 +64,7 @@ models=[
         token_length=1048576,  # set to your model's max input token length
         system_prompt="You're a helpful assistant",
         temperature=0.0,
+        top_p=1.0,
     )
 ```
 
@@ -83,6 +86,7 @@ models=[
         token_length=1000000,  # set to your model's max input token length
         system_prompt="You're a helpful assistant",
         temperature=0.0,
+        top_p=1.0,
     )
 ```
 
@@ -100,6 +104,7 @@ models=[
         token_length=128000,  # set to your model's max input token length
         system_prompt="You're a helpful assistant",
         temperature=0.0,
+        top_p=1.0,
     )
 ```
 
@@ -115,6 +120,7 @@ models=[
         token_length=1000000,  # set to your model's max input token length
         system_prompt="You're a helpful assistant",
         temperature=0.0,
+        top_p=1.0,
     ),
     ModelDescription(
         type="gemini",
@@ -122,6 +128,7 @@ models=[
         token_length=1048576,  # set to your model's max input token length
         system_prompt="You're a helpful assistant",
         temperature=0.0,
+        top_p=1.0,
     ),
     ModelDescription(
         type="ollama",
@@ -129,6 +136,7 @@ models=[
         token_length=128000,  # set to your model's max input token length
         system_prompt="You're a helpful assistant",
         temperature=0.0,
+        top_p=1.0,
     )
 ]
 ```

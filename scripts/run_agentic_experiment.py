@@ -59,6 +59,7 @@ my_settings = ExperimentSettings(
             token_length=1000000,  # set to your model's max input token length
             system_prompt="You're a helpful assistant",
             temperature=0.0,
+            top_p=1.0,
         ),
         # ModelDescription(
         #     type="azure",
@@ -66,6 +67,7 @@ my_settings = ExperimentSettings(
         #     token_length=1000000,  # set to your model's max input token length
         #     system_prompt="You're a helpful assistant",
         #     temperature=0.0,
+        #     top_p=1.0,
         # ),
         # ModelDescription(
         #     type="gemini",
@@ -73,6 +75,7 @@ my_settings = ExperimentSettings(
         #     token_length=1048576,  # set to your model's max input token length
         #     system_prompt="You're a helpful assistant",
         #     temperature=0.0,
+        #     top_p=1.0,
         # ),
         # ModelDescription(
         #     type="ollama",
@@ -80,6 +83,7 @@ my_settings = ExperimentSettings(
         #     token_length=128000,  # set to your model's max input token length
         #     system_prompt="You're a helpful assistant",
         #     temperature=0.0,
+        #     top_p=1.0,
         # ),
         # ModelDescription(
         #     type="ollama",
@@ -87,6 +91,7 @@ my_settings = ExperimentSettings(
         #     token_length=128000,  # set to your model's max input token length
         #     system_prompt="You're a helpful assistant",
         #     temperature=0.0,
+        #     top_p=1.0,
         # ),
         # ModelDescription(
         #     type="openrouter",
@@ -94,6 +99,7 @@ my_settings = ExperimentSettings(
         #     token_length=1000000,  # set to your model's max input token length
         #     system_prompt="You're a helpful assistant",
         #     temperature=0.0,
+        #     top_p=1.0,
         # ),
         # ModelDescription(
         #     type="groq",
@@ -101,6 +107,7 @@ my_settings = ExperimentSettings(
         #     token_length=128000,  # set to your model's max input token length
         #     system_prompt="You're a helpful assistant",
         #     temperature=0.0,
+        #     top_p=1.0,
         # ),
         # ModelDescription(
         #     type="vllm",
@@ -108,6 +115,7 @@ my_settings = ExperimentSettings(
         #     token_length=128000,  # set to your model's max input token length
         #     system_prompt="You're a helpful assistant",
         #     temperature=0.0,
+        #     top_p=1.0,
         # )
     ],
     tools=[
