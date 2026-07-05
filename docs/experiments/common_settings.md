@@ -93,8 +93,9 @@ my_settings = ExperimentSettings(
 
 ## Model Description
 
-- `type`: LLM types. Currently it accepts `openai`, `azure`, `gemini`, `openrouter`, or `ollama`
+- `type`: LLM types. Currently it accepts `openai`, `azure`, `gemini`, `openrouter`, `groq`, `vllm`, or `ollama`
 - `name`: Name of the model
+- `token_length`: Maximum input context length (in tokens) of the model. **Required** — set it to your model's max input token length. The conversation history is trimmed to fit within this budget.
 - `system_prompt`: A system (development) prompt
 - `temperature`: Temerature of the model (Default: 0.0)
 
@@ -103,6 +104,7 @@ my_settings = ExperimentSettings(
         ModelDescription(
             type="openai",
             name="gpt-4.1-mini-2025-04-14",
+            token_length=1000000,  # set to your model's max input token length
             system_prompt="You're a helpful assistant",
             temperature=0.0,
         )

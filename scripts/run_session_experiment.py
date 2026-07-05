@@ -56,48 +56,56 @@ my_settings = ExperimentSettings(
         ModelDescription(
             type="openai",
             name="gpt-4.1-mini-2025-04-14",
+            token_length=1000000,  # set to your model's max input token length
             system_prompt="You're a helpful assistant",
             temperature=0.0,
         ),
         # ModelDescription(
         #     type="azure",
         #     name="gpt-4.1-mini",
+        #     token_length=1000000,  # set to your model's max input token length
         #     system_prompt="You're a helpful assistant",
         #     temperature=0.0,
         # ),
         # ModelDescription(
         #     type="gemini",
         #     name="gemini-2.0-flash-lite-001",
+        #     token_length=1048576,  # set to your model's max input token length
         #     system_prompt="You're a helpful assistant",
         #     temperature=0.0,
         # ),
         # ModelDescription(
         #     type="ollama",
         #     name="qwen2.5:72b-instruct-q4_K_M",
+        #     token_length=128000,  # set to your model's max input token length
         #     system_prompt="You're a helpful assistant",
         #     temperature=0.0,
         # ),
         # ModelDescription(
         #     type="ollama",
         #     name="llama3.3:70b-instruct-q4_K_M",
+        #     token_length=128000,  # set to your model's max input token length
         #     system_prompt="You're a helpful assistant",
         #     temperature=0.0,
         # ),
         # ModelDescription(
         #     type="openrouter",
         #     name="openai/gpt-4.1-mini",
+        #     token_length=1000000,  # set to your model's max input token length
         #     system_prompt="You're a helpful assistant",
         #     temperature=0.0,
         # ),
         # ModelDescription(
         #     type="groq",
         #     name="openai/gpt-oss-120b",
+        #     token_length=128000,  # set to your model's max input token length
         #     system_prompt="You're a helpful assistant",
         #     temperature=0.0,
         # ),
         # ModelDescription(
         #     type="vllm",
         #     name="gpt-oss-120b",
+        #     token_length=128000,  # set to your model's max input token length
         #     system_prompt="You're a helpful assistant",
         #     temperature=0.0,
         # )

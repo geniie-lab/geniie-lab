@@ -47,6 +47,7 @@ my_settings = ExperimentSettings(
         ModelDescription(
             type="openai",
             name="gpt-4.1-mini-2025-04-14",
+            token_length=1000000,  # set to your model's max input token length
             system_prompt="You're a helpful assistant",
             temperature=0.0,
         ),
