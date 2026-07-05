@@ -20,6 +20,7 @@ class QueryExperimentOutput(DataClassJsonMixin):
     repetition: Optional[str] = 1
     reason: Optional[str] = None
     stage: Optional[str] = "query"
+    total_token: Optional[int] = 0
     created_at: str = field(default_factory=lambda: datetime.now(UTC).isoformat())
 
 @dataclass_json
@@ -51,6 +52,7 @@ class ClickExperimentOutput(DataClassJsonMixin):
     repetition: Optional[str] = 1
     reason: Optional[str] = None
     stage: Optional[str] = "click"
+    total_token: Optional[int] = 0
     created_at: str = field(default_factory=lambda: datetime.now(UTC).isoformat())
 
 @dataclass_json
@@ -66,6 +68,7 @@ class RelevanceJudgementExperimentOutput(DataClassJsonMixin):
     qrel_label: Optional[int] = 0
     repetition: Optional[str] = 1
     stage: Optional[str] = "rel_judge"
+    total_token: Optional[int] = 0
     created_at: str = field(default_factory=lambda: datetime.now(UTC).isoformat())
 
 @dataclass_json
@@ -82,6 +85,7 @@ class QueryReformulationExperimentOutput(DataClassJsonMixin):
     repetition: Optional[str] = 1
     reason: Optional[str] = None
     stage: Optional[str] = "reformulation"
+    total_token: Optional[int] = 0
     created_at: str = field(default_factory=lambda: datetime.now(UTC).isoformat())
 
 @dataclass_json
@@ -97,4 +101,5 @@ class NextActionOutput(DataClassJsonMixin):
     repetition: Optional[str] = 1
     reason: Optional[str] = None
     stage: Optional[str] = "next_action"
+    total_token: Optional[int] = 0
     created_at: str = field(default_factory=lambda: datetime.now(UTC).isoformat())
