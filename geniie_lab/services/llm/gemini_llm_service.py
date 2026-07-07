@@ -10,6 +10,7 @@ from google.genai import types
 from pydantic import BaseModel
 
 # Local application imports
+from geniie_lab.dataclasses.description import ModelDescription
 from geniie_lab.dataclasses.instruction import (
     ClickInstruction,
     Instruction,
@@ -27,6 +28,19 @@ T = TypeVar("T", bound=BaseModel)
 class GeminiLLMService:
     def __init__(self):
         self.client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
+
+    def generate(
+        self,
+        model: ModelDescription,
+        memory: ConversationHistory,
+        instruction: Instruction,
+        response_model: Type[T],
+    ) -> Tuple[T, int]:
+        """Ask the model to respond to the instruction as a response_model."""
+        return self._call_llm_and_parse(
+            model.name, model.token_length, model.temperature, model.top_p,
+            memory, instruction, response_model,
+        )
 
     def _call_llm_and_parse(
         self,

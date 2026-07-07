@@ -7,6 +7,7 @@ from pydantic import BaseModel
 import tiktoken
 
 # Local application imports
+from geniie_lab.dataclasses.description import ModelDescription
 from geniie_lab.dataclasses.instruction import (
     ClickInstruction,
     Instruction,
@@ -39,6 +40,19 @@ class OpenAICompatibleLLMService:
     ):
         self.client = client or OpenAI(base_url=base_url, api_key=api_key)
         self._tiktoken_by_model = tiktoken_by_model
+
+    def generate(
+        self,
+        model: ModelDescription,
+        memory: ConversationHistory,
+        instruction: Instruction,
+        response_model: Type[T],
+    ) -> Tuple[T, int]:
+        """Ask the model to respond to the instruction as a response_model."""
+        return self._call_llm_with_pydantic_response(
+            model.name, model.token_length, model.temperature, model.top_p,
+            memory, instruction, response_model,
+        )
 
     def _call_llm_with_pydantic_response(
         self,
