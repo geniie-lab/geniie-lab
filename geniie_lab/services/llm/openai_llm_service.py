@@ -1,5 +1,5 @@
 # Standard library
-from typing import Callable, Protocol, Tuple, Type, TypeVar
+from typing import Callable, Tuple, Type, TypeVar
 
 # Third-party libraries
 from dotenv import load_dotenv
@@ -10,6 +10,7 @@ import tiktoken
 # Local application imports
 from geniie_lab.dataclasses.instruction import (
     ClickInstruction,
+    Instruction,
     NextActionInstruction,
     QueryFormulationInstruction,
     QueryReFormulationInstruction,
@@ -19,10 +20,6 @@ from geniie_lab.memory import ConversationHistory
 from geniie_lab.response import Clicks, NextAction, Query, RelevanceJudgement
 
 T = TypeVar("T", bound=BaseModel)
-
-class InstructionWithGenerate(Protocol):
-    def generate(self) -> str:
-        ...
 
 class OpenAILLMService:
 
@@ -36,7 +33,7 @@ class OpenAILLMService:
         temperature: float,
         top_p: float,
         memory: ConversationHistory,
-        instruction: InstructionWithGenerate,
+        instruction: Instruction,
         response_model: Type[T]
     ) -> Tuple[T, int]:
 

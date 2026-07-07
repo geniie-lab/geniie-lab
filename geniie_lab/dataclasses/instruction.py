@@ -1,7 +1,7 @@
 # Standard library
 from dataclasses import dataclass
 from textwrap import dedent
-from typing import Union
+from typing import Protocol, Union
 
 # Local application imports
 from geniie_lab.dataclasses.description import (
@@ -16,6 +16,11 @@ from geniie_lab.dataclasses.topic import (
     TitleNarrativeTopic,
     TitleOnlyTopic
 )
+
+class Instruction(Protocol):
+    """Anything that renders itself into an instruction prompt."""
+    def generate(self) -> str: ...
+
 
 @dataclass
 class QueryFormulationInstruction:

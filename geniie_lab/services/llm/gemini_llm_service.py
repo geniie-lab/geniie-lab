@@ -1,7 +1,7 @@
 # Standard library
 import json
 import os
-from typing import Any, Callable, Dict, List, Protocol, Tuple, Type, TypeVar
+from typing import Any, Callable, Dict, List, Tuple, Type, TypeVar
 
 # Third-party libraries
 from dotenv import load_dotenv
@@ -12,6 +12,7 @@ from pydantic import BaseModel
 # Local application imports
 from geniie_lab.dataclasses.instruction import (
     ClickInstruction,
+    Instruction,
     NextActionInstruction,
     QueryFormulationInstruction,
     QueryReFormulationInstruction,
@@ -22,10 +23,6 @@ from geniie_lab.response import Clicks, NextAction, Query, RelevanceJudgement
 
 
 T = TypeVar("T", bound=BaseModel)
-
-class InstructionWithGenerate(Protocol):
-    def generate(self) -> str:
-        ...
 
 class GeminiLLMService:
     def __init__(self):
@@ -38,7 +35,7 @@ class GeminiLLMService:
         temperature: float,
         top_p: float,
         memory: ConversationHistory,
-        instruction: InstructionWithGenerate,
+        instruction: Instruction,
         response_model: Type[T]
     ) -> Tuple[T, int]:
 
