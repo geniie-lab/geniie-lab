@@ -45,7 +45,21 @@ output = QueryExperimentOutput(
 ```
 
 ## Add a new LLM
-If you would like to add a new LLM, look into files in `geniie-lab/services/llm` folders and add `your_llm_service.py` based on other llm service files. Then, update `llm_service_factory.py` to add an LLM choice which can then be specified in `ModelDescription` (see [Common Settings](../experiments/common_settings.md)).
+If the provider offers an OpenAI-compatible chat API (most do), add one entry to the provider registry in `geniie-lab/services/llm/llm_service_factory.py`:
+
+```
+_REGISTRY = {
+    ...
+    "myprovider": lambda: OpenAICompatibleLLMService(
+        base_url="https://api.myprovider.example/v1",
+        api_key=os.getenv("MYPROVIDER_API_KEY"),
+    ),
+}
+```
+
+The registry key (`myprovider`) is the value you then pass as `type` in `ModelDescription` (see [Common Settings](../experiments/common_settings.md)).
+
+If the provider has its own API, add a service class in `geniie-lab/services/llm` implementing the two methods of `LLMServiceProtocol` — `generate()` and `get_tokenizer()` — and register it the same way. See `gemini_llm_service.py` as an example.
 
 
 ## Add a new ranking model in OpenSearch
