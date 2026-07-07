@@ -46,10 +46,12 @@ class OpenSearchClientBM25:
         try:
             self.docstore = self.dataset.docs_store()
             doc = self.docstore.get(docid)
-            text = getattr(doc, 'text', None) or getattr(doc, 'body', None) or '' 
+            text = getattr(doc, 'text', None) or getattr(doc, 'body', None) or ''
+            title = getattr(doc, 'title', None)
             return FullText(
                 docid = docid,
-                text = self.clean_text(text)
+                text = self.clean_text(text),
+                title = self.clean_text(title) if title else None
             )
         except Exception as e:
             return Error(error_text=str(e))
@@ -79,6 +81,7 @@ class OpenSearchClientBM25:
                 ranking=start + idx,
                 docid=src.get("docid"),
                 title=self.clean_text(src.get("title", "No Title")),
-                snippet=snippet_text
+                snippet=snippet_text,
+                score=hit.get("_score") or 0.0
             ))
         return Serp(hits=total_hits, results=items)

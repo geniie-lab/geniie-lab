@@ -96,7 +96,9 @@ class RankingStage:
 
         run = Run()
         for result in state.serp.results:
-            run.add(state.topic.id, result.docid, result.ranking)
+            # ir_measures ranks by descending score (TREC run convention), so
+            # pass the engine's retrieval score, not the 1-based SERP ranking.
+            run.add(state.topic.id, result.docid, result.score)
         results = MeasureService().calc(settings.task.measurement, qrels, run)
 
         output = RankingExperimentOutput(
@@ -107,7 +109,7 @@ class RankingStage:
             dataset=settings.topicset.name,
             topic_id=state.topic.id,
             doc_ids=state.docids,
-            start = settings.task.start_offset,
+            start=start_offset,  # the offset actually used for this search
             size=settings.task.serp_size,
             performance=results
         )
@@ -385,56 +387,60 @@ class ExperimentRunner:
                 opensearch_client = self.opensearch_client_factory.create_opensearch_client(settings=self.settings, tool=tool)
 
                 for topic in self.topics:
-                    llm_service = self.llm_factory.create_llm_service(model.type)
-                    print(f"\n{'--'*10} Topic: {topic.id} ({topic.title}) {'--'*10}", file=sys.stderr)
+                    self._run_topic(topic, model, tool, opensearch_client)
 
-                    memory = ConversationHistory(system_role=model.system_role, system_prompt=model.system_prompt)
-                    state = ExperimentState(topic=topic, memory=memory)
+    def _run_topic(self, topic, model, tool, opensearch_client):
+        """Run the action loop for one topic. Returning ends this topic only."""
+        llm_service = self.llm_factory.create_llm_service(model.type)
+        print(f"\n{'--'*10} Topic: {topic.id} ({topic.title}) {'--'*10}", file=sys.stderr)
 
-                    state.next_action = NextAction(action=Action.SUBMIT_NEW_QUERY, reason="initial bootstrap")
+        memory = ConversationHistory(system_role=model.system_role, system_prompt=model.system_prompt)
+        state = ExperimentState(topic=topic, memory=memory)
 
-                    while state.action_num < self.settings.max_actions:
-                        stage_names = []
+        state.next_action = NextAction(action=Action.SUBMIT_NEW_QUERY, reason="initial bootstrap")
 
-                        if state.next_action and state.next_action.action != Action.END_TASK:
-                            action_enum = getattr(state.next_action, "action", None)
-                            stage_names = self.action_stage_map.get(action_enum, [])
+        while state.action_num < self.settings.max_actions:
+            stage_names = []
 
-                        for stage_name in stage_names:
-                            if stage_name not in self.stage_runners:
-                                print(f"[ERROR] Unknown stage: {stage_name}", file=sys.stderr)
-                                sys.exit(1)
+            if state.next_action and state.next_action.action != Action.END_TASK:
+                action_enum = getattr(state.next_action, "action", None)
+                stage_names = self.action_stage_map.get(action_enum, [])
 
-                            if stage_name == "ranking" and action_enum == Action.GO_NEXT_RESULT_PAGE:
-                                state.query.start += 10
+            for stage_name in stage_names:
+                if stage_name not in self.stage_runners:
+                    print(f"[ERROR] Unknown stage: {stage_name}", file=sys.stderr)
+                    sys.exit(1)
 
-                            stage_runner = self.stage_runners[stage_name]
-                            state = stage_runner.run(self.settings, state, llm_service, model, tool, opensearch_client, stage_name)
-                            
-                            if state.error:
-                                print(f"[WARNING] in stage '{stage_name}': {state.error}. Stopping pipeline for this topic.", file=sys.stderr)
-                                
-                                if self.settings.full_log:
-                                    print(f"\n{'--'*10} Full Log {'--'*10}", file=sys.stderr)
-                                    all_messages = state.memory.get_all_messages()
-                                    pprint.pprint(all_messages, stream=sys.stderr)
+                if stage_name == "ranking" and action_enum == Action.GO_NEXT_RESULT_PAGE:
+                    state.query.start += self.settings.task.serp_size
 
-                                state.error = None
-                                return
-                            
-                            if stage_name == "next_action" and state.next_action.action == Action.END_TASK:
-                                print(f"\n{'='*20} Agent decided to end the task. {'='*20}", file=sys.stderr)
+                stage_runner = self.stage_runners[stage_name]
+                state = stage_runner.run(self.settings, state, llm_service, model, tool, opensearch_client, stage_name)
 
-                                if self.settings.full_log:
-                                    print(f"\n{'--'*10} Full Log {'--'*10}", file=sys.stderr)
-                                    all_messages = state.memory.get_all_messages()
-                                    pprint.pprint(all_messages, stream=sys.stderr)
-                                
-                                return
-
-                            state.action_num += 1
+                if state.error:
+                    print(f"[WARNING] in stage '{stage_name}': {state.error}. Stopping pipeline for this topic.", file=sys.stderr)
 
                     if self.settings.full_log:
                         print(f"\n{'--'*10} Full Log {'--'*10}", file=sys.stderr)
                         all_messages = state.memory.get_all_messages()
                         pprint.pprint(all_messages, stream=sys.stderr)
+
+                    state.error = None
+                    return
+
+                if stage_name == "next_action" and state.next_action.action == Action.END_TASK:
+                    print(f"\n{'='*20} Agent decided to end the task. {'='*20}", file=sys.stderr)
+
+                    if self.settings.full_log:
+                        print(f"\n{'--'*10} Full Log {'--'*10}", file=sys.stderr)
+                        all_messages = state.memory.get_all_messages()
+                        pprint.pprint(all_messages, stream=sys.stderr)
+
+                    return
+
+                state.action_num += 1
+
+        if self.settings.full_log:
+            print(f"\n{'--'*10} Full Log {'--'*10}", file=sys.stderr)
+            all_messages = state.memory.get_all_messages()
+            pprint.pprint(all_messages, stream=sys.stderr)
