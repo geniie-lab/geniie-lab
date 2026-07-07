@@ -96,7 +96,9 @@ class RankingStage:
 
         run = Run()
         for result in state.serp.results:
-            run.add(state.topic.id, result.docid, result.ranking)
+            # ir_measures ranks by descending score (TREC run convention), so
+            # pass the engine's retrieval score, not the 1-based SERP ranking.
+            run.add(state.topic.id, result.docid, result.score)
         results = MeasureService().calc(settings.task.measurement, qrels, run)
 
         output = RankingExperimentOutput(

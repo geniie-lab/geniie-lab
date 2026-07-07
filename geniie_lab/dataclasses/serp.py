@@ -1,5 +1,5 @@
 # Standard library
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import List, Optional
 
 # Third-party libraries
@@ -12,6 +12,10 @@ class SearchResultItem(DataClassJsonMixin):
     docid: str
     title: str
     snippet: str
+    # Retrieval score from the search engine, used for evaluation only.
+    # repr=False keeps it out of the SERP rendered into LLM instructions:
+    # the simulated searcher must not see engine scores.
+    score: float = field(default=0.0, repr=False)
 
 @dataclass_json
 @dataclass

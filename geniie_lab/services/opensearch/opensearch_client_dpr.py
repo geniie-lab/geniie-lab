@@ -146,7 +146,8 @@ class OpenSearchClientDPR:
                 ranking=start + idx,
                 docid=src.get("docid"),
                 title=self.clean_text(src.get("title", "No Title")),
-                snippet=snippet_text
+                snippet=snippet_text,
+                score=hit.get("_score") or 0.0
             ))
 
         return Serp(hits=total_hits, results=items)
