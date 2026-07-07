@@ -1,7 +1,7 @@
 # Standard library
 import json
 import os
-from typing import Any, Callable, Dict, List, Protocol, Tuple, Type, TypeVar
+from typing import Any, Callable, Dict, List, Tuple, Type, TypeVar
 
 # Third-party libraries
 from dotenv import load_dotenv
@@ -10,26 +10,29 @@ from google.genai import types
 from pydantic import BaseModel
 
 # Local application imports
-from geniie_lab.dataclasses.instruction import (
-    ClickInstruction,
-    NextActionInstruction,
-    QueryFormulationInstruction,
-    QueryReFormulationInstruction,
-    RelevanceJudgementInstruction,
-)
+from geniie_lab.dataclasses.description import ModelDescription
+from geniie_lab.dataclasses.instruction import Instruction
 from geniie_lab.memory import ConversationHistory
-from geniie_lab.response import Clicks, NextAction, Query, RelevanceJudgement
 
 
 T = TypeVar("T", bound=BaseModel)
 
-class InstructionWithGenerate(Protocol):
-    def generate(self) -> str:
-        ...
-
 class GeminiLLMService:
     def __init__(self):
         self.client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
+
+    def generate(
+        self,
+        model: ModelDescription,
+        memory: ConversationHistory,
+        instruction: Instruction,
+        response_model: Type[T],
+    ) -> Tuple[T, int]:
+        """Ask the model to respond to the instruction as a response_model."""
+        return self._call_llm_and_parse(
+            model.name, model.token_length, model.temperature, model.top_p,
+            memory, instruction, response_model,
+        )
 
     def _call_llm_and_parse(
         self,
@@ -38,7 +41,7 @@ class GeminiLLMService:
         temperature: float,
         top_p: float,
         memory: ConversationHistory,
-        instruction: InstructionWithGenerate,
+        instruction: Instruction,
         response_model: Type[T]
     ) -> Tuple[T, int]:
 
@@ -86,24 +89,3 @@ class GeminiLLMService:
                 raise ValueError(f"Token count is None for model {model_name}.")
             return token_count
         return count_fn
-
-    def create_query(self, model: str, token_length: int, temperature: float, top_p: float, memory: ConversationHistory, instruction: QueryFormulationInstruction ) -> Tuple[Query, int]:
-
-        query = self._call_llm_and_parse(model, token_length, temperature, top_p, memory, instruction, Query)
-        return query
-
-    def recreate_query(self, model: str, token_length: int, temperature: float, top_p: float, memory: ConversationHistory, instruction: QueryReFormulationInstruction) -> Tuple[Query, int]:
-
-        query = self._call_llm_and_parse(model, token_length, temperature, top_p, memory, instruction, Query)
-        return query
-
-    def create_clicks(self, model: str, token_length: int, temperature: float, top_p: float, memory: ConversationHistory, instruction: ClickInstruction) -> Tuple[Clicks, int]:
-
-        return self._call_llm_and_parse(model, token_length, temperature, top_p, memory, instruction, Clicks)
-
-    def calc_relevance_judgement(self, model: str, token_length: int, temperature: float, top_p: float, memory: ConversationHistory, instruction: RelevanceJudgementInstruction) -> Tuple[RelevanceJudgement, int]:
-
-        return self._call_llm_and_parse(model, token_length, temperature, top_p, memory, instruction, RelevanceJudgement)
-
-    def decide_next_action(self, model: str, token_length: int, temperature: float, top_p: float, memory: ConversationHistory, instruction: NextActionInstruction) -> Tuple[NextAction, int]:
-        return self._call_llm_and_parse(model, token_length, temperature, top_p, memory, instruction, NextAction)
