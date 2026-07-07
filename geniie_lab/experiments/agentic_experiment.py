@@ -109,7 +109,7 @@ class RankingStage:
             dataset=settings.topicset.name,
             topic_id=state.topic.id,
             doc_ids=state.docids,
-            start = settings.task.start_offset,
+            start=start_offset,  # the offset actually used for this search
             size=settings.task.serp_size,
             performance=results
         )
@@ -412,7 +412,7 @@ class ExperimentRunner:
                     sys.exit(1)
 
                 if stage_name == "ranking" and action_enum == Action.GO_NEXT_RESULT_PAGE:
-                    state.query.start += 10
+                    state.query.start += self.settings.task.serp_size
 
                 stage_runner = self.stage_runners[stage_name]
                 state = stage_runner.run(self.settings, state, llm_service, model, tool, opensearch_client, stage_name)

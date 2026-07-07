@@ -107,7 +107,7 @@ class RankingStage:
             dataset=settings.topicset.name,
             topic_id=state.topic.id,
             doc_ids=state.docids,
-            start=settings.task.start_offset,
+            start=start_offset,  # the offset actually used for this search
             size=settings.task.serp_size,
             performance=results,
             repetition=repetition
