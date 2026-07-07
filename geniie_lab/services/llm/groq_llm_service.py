@@ -5,7 +5,6 @@ from typing import Callable, Protocol, Tuple, Type, TypeVar
 # Third-party libraries
 from dotenv import load_dotenv
 from openai import OpenAI
-from openai.types.chat import ChatCompletionUserMessageParam
 from pydantic import BaseModel
 import tiktoken
 
@@ -47,10 +46,9 @@ class GroqLLMService:
     ) -> Tuple[T, int]:
 
         memory.add_user_message(instruction.generate())
-        messages_dicts: list[dict[str, str]] = memory.get_messages(tokenizer=self.get_tokenizer(model), max_tokens=token_length)
-        messages: list[ChatCompletionUserMessageParam] = [
-            ChatCompletionUserMessageParam(role="user", content=msg["content"]) for msg in messages_dicts
-        ]
+        # Pass roles through unchanged: the system prompt and previous assistant
+        # turns must not be re-sent as user messages.
+        messages: list[dict[str, str]] = memory.get_messages(tokenizer=self.get_tokenizer(model), max_tokens=token_length)
         completion = self.client.beta.chat.completions.parse(
             model=model,
             messages=messages,
