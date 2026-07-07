@@ -355,6 +355,7 @@ class ExperimentRunner:
                         if state.error:
                             print(f"[WARNING] in stage '{stage_name}': {state.error}. Stopping pipeline for this topic.", file=sys.stderr)
                             state.error = None
+                            break
                     
                     if self.settings.full_log:
                         print(f"\n{'--'*10} Full Log {'--'*10}", file=sys.stderr)
