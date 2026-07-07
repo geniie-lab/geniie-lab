@@ -8,16 +8,8 @@ import tiktoken
 
 # Local application imports
 from geniie_lab.dataclasses.description import ModelDescription
-from geniie_lab.dataclasses.instruction import (
-    ClickInstruction,
-    Instruction,
-    NextActionInstruction,
-    QueryFormulationInstruction,
-    QueryReFormulationInstruction,
-    RelevanceJudgementInstruction,
-)
+from geniie_lab.dataclasses.instruction import Instruction
 from geniie_lab.memory import ConversationHistory
-from geniie_lab.response import Clicks, NextAction, Query, RelevanceJudgement
 
 T = TypeVar("T", bound=BaseModel)
 
@@ -95,18 +87,3 @@ class OpenAICompatibleLLMService:
         else:
             enc = tiktoken.get_encoding("cl100k_base")
         return lambda text: len(enc.encode(text))
-
-    def create_query(self, model: str, token_length: int, temperature: float, top_p: float, memory: ConversationHistory, instruction: QueryFormulationInstruction) -> Tuple[Query, int]:
-        return self._call_llm_with_pydantic_response(model, token_length, temperature, top_p, memory, instruction, Query)
-
-    def recreate_query(self, model: str, token_length: int, temperature: float, top_p: float, memory: ConversationHistory, instruction: QueryReFormulationInstruction) -> Tuple[Query, int]:
-        return self._call_llm_with_pydantic_response(model, token_length, temperature, top_p, memory, instruction, Query)
-
-    def create_clicks(self, model: str, token_length: int, temperature: float, top_p: float, memory: ConversationHistory, instruction: ClickInstruction) -> Tuple[Clicks, int]:
-        return self._call_llm_with_pydantic_response(model, token_length, temperature, top_p, memory, instruction, Clicks)
-
-    def calc_relevance_judgement(self, model: str, token_length: int, temperature: float, top_p: float, memory: ConversationHistory, instruction: RelevanceJudgementInstruction) -> Tuple[RelevanceJudgement, int]:
-        return self._call_llm_with_pydantic_response(model, token_length, temperature, top_p, memory, instruction, RelevanceJudgement)
-
-    def decide_next_action(self, model: str, token_length: int, temperature: float, top_p: float, memory: ConversationHistory, instruction: NextActionInstruction) -> Tuple[NextAction, int]:
-        return self._call_llm_with_pydantic_response(model, token_length, temperature, top_p, memory, instruction, NextAction)

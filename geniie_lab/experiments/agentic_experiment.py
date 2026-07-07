@@ -32,7 +32,7 @@ from geniie_lab.dataclasses.output import (
     NextActionOutput,
 )
 from geniie_lab.memory import ConversationHistory
-from geniie_lab.response import Action, NextAction
+from geniie_lab.response import Action, Clicks, NextAction, Query, RelevanceJudgement
 from geniie_lab.services.llm.llm_service_factory import LLMServiceFactory
 from geniie_lab.services.llm.llm_service_protocol import LLMServiceProtocol
 from geniie_lab.services.measure_service import MeasureService, Qrels, Run
@@ -56,7 +56,7 @@ class QueryFormulationStage:
         instruction_text = self.config.instruction or self.DEFAULT_INSTRUCTION
         qf_instruction = QueryFormulationInstruction(instruction=instruction_text, task=settings.task, corpus=settings.corpus, tool=tool, topic=state.topic)
 
-        state.query, total_token = llm_service.create_query(model.name, model.token_length, model.temperature, model.top_p, state.memory, qf_instruction)
+        state.query, total_token = llm_service.generate(model, state.memory, qf_instruction, Query)
 
         output = QueryExperimentOutput(
             session_name = settings.name,
@@ -133,7 +133,7 @@ class ClickStage:
         instruction_text = self.config.instruction or self.DEFAULT_INSTRUCTION
         click_instruction = ClickInstruction(instruction=instruction_text, serp=state.serp)
 
-        state.clicks, total_token = llm_service.create_clicks(model.name, model.token_length, model.temperature, model.top_p, state.memory, click_instruction)
+        state.clicks, total_token = llm_service.generate(model, state.memory, click_instruction, Clicks)
 
         output = ClickExperimentOutput(
             session_name=settings.name,
@@ -189,7 +189,7 @@ class RelevanceJudgementStage:
             instruction_text = self.config.instruction or self.DEFAULT_INSTRUCTION
             rj_instruction = RelevanceJudgementInstruction(instruction=instruction_text, fulltext=state.fulltext)
 
-            state.relevance_judgement, total_token = llm_service.calc_relevance_judgement(model.name, model.token_length, model.temperature, model.top_p, state.memory, rj_instruction)
+            state.relevance_judgement, total_token = llm_service.generate(model, state.memory, rj_instruction, RelevanceJudgement)
             qrel_label = qrels.get(state.topic.id, click_docid, default=0)
 
             output = RelevanceJudgementExperimentOutput(
@@ -225,7 +225,7 @@ class QueryReFormulationStage:
         instruction_text = self.config.instruction or self.DEFAULT_INSTRUCTION
         qrf_instruction = QueryReFormulationInstruction(instruction=instruction_text)
 
-        state.query, total_token = llm_service.recreate_query(model.name, model.token_length, model.temperature, model.top_p, state.memory, qrf_instruction)
+        state.query, total_token = llm_service.generate(model, state.memory, qrf_instruction, Query)
 
         output = QueryReformulationExperimentOutput(
             session_name = settings.name,
@@ -261,7 +261,7 @@ class NextActionStage:
         instruction_text = self.config.instruction or self.DEFAULT_INSTRUCTION
         next_action_instruction = NextActionInstruction(instruction=instruction_text, task=settings.task)
 
-        state.next_action, total_token = llm_service.decide_next_action(model.name, model.token_length, model.temperature, model.top_p, state.memory, next_action_instruction)
+        state.next_action, total_token = llm_service.generate(model, state.memory, next_action_instruction, NextAction)
 
         action_name = None
         if state.next_action and state.next_action.action:

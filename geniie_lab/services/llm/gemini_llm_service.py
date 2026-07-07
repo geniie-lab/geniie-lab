@@ -11,16 +11,8 @@ from pydantic import BaseModel
 
 # Local application imports
 from geniie_lab.dataclasses.description import ModelDescription
-from geniie_lab.dataclasses.instruction import (
-    ClickInstruction,
-    Instruction,
-    NextActionInstruction,
-    QueryFormulationInstruction,
-    QueryReFormulationInstruction,
-    RelevanceJudgementInstruction,
-)
+from geniie_lab.dataclasses.instruction import Instruction
 from geniie_lab.memory import ConversationHistory
-from geniie_lab.response import Clicks, NextAction, Query, RelevanceJudgement
 
 
 T = TypeVar("T", bound=BaseModel)
@@ -97,24 +89,3 @@ class GeminiLLMService:
                 raise ValueError(f"Token count is None for model {model_name}.")
             return token_count
         return count_fn
-
-    def create_query(self, model: str, token_length: int, temperature: float, top_p: float, memory: ConversationHistory, instruction: QueryFormulationInstruction ) -> Tuple[Query, int]:
-
-        query = self._call_llm_and_parse(model, token_length, temperature, top_p, memory, instruction, Query)
-        return query
-
-    def recreate_query(self, model: str, token_length: int, temperature: float, top_p: float, memory: ConversationHistory, instruction: QueryReFormulationInstruction) -> Tuple[Query, int]:
-
-        query = self._call_llm_and_parse(model, token_length, temperature, top_p, memory, instruction, Query)
-        return query
-
-    def create_clicks(self, model: str, token_length: int, temperature: float, top_p: float, memory: ConversationHistory, instruction: ClickInstruction) -> Tuple[Clicks, int]:
-
-        return self._call_llm_and_parse(model, token_length, temperature, top_p, memory, instruction, Clicks)
-
-    def calc_relevance_judgement(self, model: str, token_length: int, temperature: float, top_p: float, memory: ConversationHistory, instruction: RelevanceJudgementInstruction) -> Tuple[RelevanceJudgement, int]:
-
-        return self._call_llm_and_parse(model, token_length, temperature, top_p, memory, instruction, RelevanceJudgement)
-
-    def decide_next_action(self, model: str, token_length: int, temperature: float, top_p: float, memory: ConversationHistory, instruction: NextActionInstruction) -> Tuple[NextAction, int]:
-        return self._call_llm_and_parse(model, token_length, temperature, top_p, memory, instruction, NextAction)

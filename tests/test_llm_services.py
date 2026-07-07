@@ -1,5 +1,6 @@
 from types import SimpleNamespace
 
+from geniie_lab.dataclasses.description import ModelDescription
 from geniie_lab.dataclasses.instruction import QueryReFormulationInstruction
 from geniie_lab.memory import ConversationHistory
 from geniie_lab.response import Query
@@ -36,7 +37,9 @@ def test_call_preserves_roles_and_updates_memory():
     memory.add_assistant_response("earlier assistant turn")
 
     instruction = QueryReFormulationInstruction(instruction="reformulate")
-    response, total_token = service.create_query("some-model", 100000, 0.0, 1.0, memory, instruction)
+    model = ModelDescription(type="openai", name="some-model", token_length=100000,
+                             temperature=0.0, top_p=1.0)
+    response, total_token = service.generate(model, memory, instruction, Query)
 
     assert response is parsed
     assert total_token == 99
