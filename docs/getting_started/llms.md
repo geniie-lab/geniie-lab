@@ -90,6 +90,30 @@ models=[
     )
 ```
 
+## Groq models
+
+Set `GROQ_API_KEY` in `.env` file
+
+```
+GROQ_API_KEY="[your key]"
+```
+
+Then, set your model name in `ExperimentalSettings` in the runner files in `scripts`
+
+```
+models=[
+    ModelDescription(
+        type="groq",
+        name="openai/gpt-oss-120b",
+        token_length=128000,  # set to your model's max input token length
+        system_prompt="You're a helpful assistant",
+        temperature=0.0,
+        top_p=1.0,
+    )
+```
+
+Note: the free tier is limited to 8,000 tokens per minute, which is enough for small pilot runs (e.g. query and ranking stages) but not for full sessions; a paid plan is needed for complete experiments.
+
 ## Amazon Bedrock models
 
 Set `BEDROCK_API_KEY` and `BEDROCK_REGION` in `.env` file
@@ -134,6 +158,30 @@ models=[
         top_p=1.0,
     )
 ```
+
+## Local models via `vllm`
+
+Local models should be served by `vllm` at http://localhost:8000/v1, for example:
+
+```
+vllm serve openai/gpt-oss-120b --host 0.0.0.0
+```
+
+Then, set your model name in `ExperimentalSettings` in the runner files in `scripts`
+
+```
+models=[
+    ModelDescription(
+        type="vllm",
+        name="openai/gpt-oss-120b",
+        token_length=128000,  # set to your model's max input token length
+        system_prompt="You're a helpful assistant",
+        temperature=0.0,
+        top_p=1.0,
+    )
+```
+
+Note: the model name must match the name the `vllm` server was started with.
 
 ## How to compare multiple LLMs
 
