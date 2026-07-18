@@ -53,7 +53,13 @@ class Clicks(BaseModel):
         title="ranking_list",
         description=(
             "The ranking number of the documents in the result to examine the full text. "
-        )
+        ),
+        # gpt-oss-120b on Groq drops commas between bare integers in
+        # constrained decoding ([2, 9] is emitted as [29]). Declaring string
+        # items in the JSON schema forces quoted, comma-separated elements;
+        # pydantic then coerces each "2" back to int, so ranking_list stays
+        # List[int] for all downstream code.
+        json_schema_extra=lambda schema: schema.update({"items": {"type": "string"}}),
     )
     reason: str = Field(
         ...,
