@@ -158,8 +158,14 @@ class RelevanceJudgementStage:
         self.config = config
 
     def run(self, settings: ExperimentSettings, state: ExperimentState, llm_service: LLMServiceProtocol, model: ModelDescription, tool: ToolDescription, opensearch_client: OpenSearchClientProtocol) -> ExperimentState:
-        if not state.clicks or not state.serp or not state.clicks.ranking_list:
-            state.error = "Clicks/SERP not found or no documents clicked, cannot run RelevanceJudgementStage."
+        if not state.clicks or not state.serp:
+            state.error = "Clicks/SERP not found, cannot run RelevanceJudgementStage."
+            return state
+        if not state.clicks.ranking_list:
+            # An empty click list is a legitimate agent decision, not an
+            # error: skip the judgements and let the session continue with
+            # the rest of the plan (e.g. reformulate in the next iteration).
+            print("\n--- Skipping: Relevance Judgement Stage (no documents clicked) ---", file=sys.stderr)
             return state
 
         dataset = ir_datasets.load(settings.topicset.name)
