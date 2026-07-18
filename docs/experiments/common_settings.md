@@ -97,7 +97,7 @@ my_settings = ExperimentSettings(
 - `name`: Name of the model
 - `token_length`: Maximum input context length (in tokens) of the model. **Required** — set it to your model's max input token length. The conversation history is trimmed to fit within this budget.
 - `system_prompt`: A system (development) prompt
-- `temperature`: Temerature of the model (Default: 0.0)
+- `temperature`: Temperature of the model (Default: 0.0)
 - `top_p`: Nucleus (top-p) sampling probability, applied consistently across all LLM types (Default: 1.0)
 
 ```python
