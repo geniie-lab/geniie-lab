@@ -90,6 +90,33 @@ models=[
     )
 ```
 
+## Amazon Bedrock models
+
+Set `BEDROCK_API_KEY` and `BEDROCK_REGION` in `.env` file
+
+```
+BEDROCK_API_KEY="[your Amazon Bedrock API key]"
+BEDROCK_REGION="us-east-1"
+```
+
+You also need to enable model access for the models you want to use in the Amazon Bedrock console of that region.
+
+Then, set your model name in `ExperimentalSettings` in the runner files in `scripts`
+
+```
+models=[
+    ModelDescription(
+        type="bedrock",
+        name="openai.gpt-oss-120b",
+        token_length=128000,  # set to your model's max input token length
+        system_prompt="You're a helpful assistant",
+        temperature=0.0,
+        top_p=1.0,
+    )
+```
+
+Note: Bedrock model names use dots (`openai.gpt-oss-120b`), not slashes. Structured outputs are handled by `geniie-lab` via prompt-embedded schemas on this provider, and the schema tokens are excluded from the reported token counts.
+
 ## Local models via `ollama`
 
 Local models should be loaded via `ollama` at http://localhost:11434/v1.

@@ -93,7 +93,7 @@ my_settings = ExperimentSettings(
 
 ## Model Description
 
-- `type`: LLM types. Currently it accepts `openai`, `azure`, `gemini`, `openrouter`, `groq`, `vllm`, or `ollama`
+- `type`: LLM types. Currently it accepts `openai`, `azure`, `bedrock`, `gemini`, `openrouter`, `groq`, `vllm`, or `ollama`
 - `name`: Name of the model
 - `token_length`: Maximum input context length (in tokens) of the model. **Required** — set it to your model's max input token length. The conversation history is trimmed to fit within this budget.
 - `system_prompt`: A system (development) prompt
@@ -122,6 +122,7 @@ Note that `tools` in LLM applications have wide scopes of external applications,
 
 - `name`: Name of search tool
 - `ranking_model`: Name of ranking model used by the tool
+- `encode_model`: Name of the encoder model used by sparse/dense ranking models such as `splade` and `dpr`. Not needed for `bm25`
 - `index_name`: Name of index files used by the tool
 - `host`: URL of opensearch server
 - `port`: Port number of opensearch server
