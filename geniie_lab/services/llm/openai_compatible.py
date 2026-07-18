@@ -1,9 +1,10 @@
 # Standard library
+import json
 from typing import Callable, Tuple, Type, TypeVar
 
 # Third-party libraries
 from openai import OpenAI
-from pydantic import BaseModel
+from pydantic import BaseModel, ValidationError
 import tiktoken
 
 # Local application imports
@@ -23,15 +24,25 @@ class OpenAICompatibleLLMService:
     llm_service_factory.
     """
 
+    #: Attempts per call when schema_via_prompt validation fails.
+    MAX_SCHEMA_RETRIES = 3
+
     def __init__(
         self,
         base_url: str | None = None,
         api_key: str | None = None,
         client: OpenAI | None = None,
         tiktoken_by_model: bool = True,
+        schema_via_prompt: bool = False,
     ):
         self.client = client or OpenAI(base_url=base_url, api_key=api_key)
         self._tiktoken_by_model = tiktoken_by_model
+        # Some providers (e.g. Amazon Bedrock) mis-handle json_schema
+        # response_format for open-weight models: strict grammars loop on
+        # whitespace and non-strict ones leak stray tokens before the JSON.
+        # When set, send the schema in the prompt with json_object mode and
+        # validate the response ourselves instead of using parse().
+        self._schema_via_prompt = schema_via_prompt
 
     def generate(
         self,
@@ -41,7 +52,9 @@ class OpenAICompatibleLLMService:
         response_model: Type[T],
     ) -> Tuple[T, int]:
         """Ask the model to respond to the instruction as a response_model."""
-        return self._call_llm_with_pydantic_response(
+        call = (self._call_llm_with_prompted_schema if self._schema_via_prompt
+                else self._call_llm_with_pydantic_response)
+        return call(
             model.name, model.token_length, model.temperature, model.top_p,
             memory, instruction, response_model,
         )
@@ -77,6 +90,86 @@ class OpenAICompatibleLLMService:
         total_token = getattr(usage, "total_tokens", 0) or 0
 
         return parsed_response, total_token
+
+    def _call_llm_with_prompted_schema(
+        self,
+        model: str,
+        token_length: int,
+        temperature: float,
+        top_p: float,
+        memory: ConversationHistory,
+        instruction: Instruction,
+        response_model: Type[T]
+    ) -> Tuple[T, int]:
+        tokenizer = self.get_tokenizer(model)
+        schema_suffix = (
+            "\n\nRespond with ONLY a JSON object that conforms to this JSON schema:\n"
+            + json.dumps(response_model.model_json_schema())
+        )
+        # Store only the plain instruction in session memory so bedrock
+        # conversations stay identical to providers that take the schema
+        # out-of-band; the schema rides along on the outgoing copy only.
+        memory.add_user_message(instruction.generate())
+        messages: list[dict[str, str]] = memory.get_messages(tokenizer=tokenizer, max_tokens=token_length)
+        messages = messages[:-1] + [
+            {**messages[-1], "content": messages[-1]["content"] + schema_suffix}
+        ]
+        # The schema suffix exists only to work around the provider's broken
+        # response_format; exclude it from the reported count so bedrock
+        # sessions are token-comparable with other providers. The deduction
+        # uses the trimming tokenizer, so it is approximate.
+        schema_tokens = tokenizer(schema_suffix)
+        total_token = 0
+        last_error: Exception | None = None
+        for _ in range(self.MAX_SCHEMA_RETRIES):
+            completion = self.client.chat.completions.create(
+                model=model,
+                messages=messages,
+                response_format={"type": "json_object"},
+                temperature=temperature,
+                top_p=top_p,
+            )
+            usage = getattr(completion, "usage", None)
+            call_tokens = getattr(usage, "total_tokens", 0) or 0
+            total_token += max(0, call_tokens - schema_tokens)
+            content = completion.choices[0].message.content or ""
+            try:
+                parsed_response = self._parse_lenient(content, response_model)
+            except (ValidationError, ValueError) as error:
+                # Feedback retry: keep the failed exchange out of the session
+                # memory but show it to the model so the next attempt differs.
+                last_error = error
+                messages = messages + [
+                    {"role": "assistant", "content": content},
+                    {"role": "user", "content":
+                        f"Your response was not valid: {error}. "
+                        "Respond again with ONLY a valid JSON object for the schema."},
+                ]
+                continue
+            memory.add_assistant_response(completion.choices[0].message.to_json())
+            return parsed_response, total_token
+        raise ValueError(
+            f"LLM response failed {response_model.__name__} validation after "
+            f"{self.MAX_SCHEMA_RETRIES} attempts: {last_error}"
+        )
+
+    @staticmethod
+    def _parse_lenient(content: str, response_model: Type[T]) -> T:
+        """Validate content, tolerating stray tokens around the JSON object.
+
+        Providers without a real schema grammar can emit prefixes such as
+        "1,{...}" or "{ {...}" around an otherwise valid object; try each
+        "{"-suffix of the content until one validates.
+        """
+        end = content.rfind("}") + 1
+        starts = [i for i, char in enumerate(content[:end]) if char == "{"]
+        last_error: Exception = ValueError(f"no JSON object found in: {content[:80]!r}")
+        for start in starts:
+            try:
+                return response_model.model_validate_json(content[start:end])
+            except ValidationError as error:
+                last_error = error
+        raise last_error
 
     def get_tokenizer(self, model_name: str) -> Callable[[str], int]:
         if self._tiktoken_by_model:
