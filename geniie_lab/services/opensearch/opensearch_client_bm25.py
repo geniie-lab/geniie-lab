@@ -33,6 +33,11 @@ class OpenSearchClientBM25:
             verify_certs=False,
             ssl_assert_hostname=False,
             ssl_show_warn=False,
+            # Nested neural queries on chunked indexes can exceed the 10s
+            # default read timeout under load.
+            timeout=60,
+            retry_on_timeout=True,
+            max_retries=2,
         )
         self.index_name = index_name
         self.dataset = ir_datasets.load(dataset_name)
