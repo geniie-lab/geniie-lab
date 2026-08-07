@@ -56,7 +56,8 @@ class QueryFormulationStage:
         instruction_text = self.config.instruction or self.DEFAULT_INSTRUCTION
         qf_instruction = QueryFormulationInstruction(instruction=instruction_text, task=settings.task, corpus=settings.corpus, tool=tool, topic=state.topic)
 
-        state.query, total_token = llm_service.generate(model, state.memory, qf_instruction, Query)
+        state.query, total_token, thinking = llm_service.generate(model, state.memory, qf_instruction, Query)
+        thinking_token = llm_service.get_tokenizer(model.name)(thinking) if thinking else None
 
         output = QueryExperimentOutput(
             session_name = settings.name,
@@ -67,7 +68,9 @@ class QueryFormulationStage:
             query = state.query.query,
             start = settings.task.start_offset,
             size = settings.task.serp_size,
-            total_token = total_token
+            total_token = total_token,
+            thinking = thinking,
+            thinking_token = thinking_token
         )
         print(output.to_json(ensure_ascii=False))
         return state
@@ -133,7 +136,8 @@ class ClickStage:
         instruction_text = self.config.instruction or self.DEFAULT_INSTRUCTION
         click_instruction = ClickInstruction(instruction=instruction_text, serp=state.serp)
 
-        state.clicks, total_token = llm_service.generate(model, state.memory, click_instruction, Clicks)
+        state.clicks, total_token, thinking = llm_service.generate(model, state.memory, click_instruction, Clicks)
+        thinking_token = llm_service.get_tokenizer(model.name)(thinking) if thinking else None
 
         output = ClickExperimentOutput(
             session_name=settings.name,
@@ -142,7 +146,9 @@ class ClickStage:
             dataset=settings.topicset.name,
             topic_id=state.topic.id,
             rankings=state.clicks.ranking_list,
-            total_token=total_token
+            total_token = total_token,
+            thinking = thinking,
+            thinking_token = thinking_token
         )
         print(output.to_json(ensure_ascii=False))
 
@@ -189,7 +195,8 @@ class RelevanceJudgementStage:
             instruction_text = self.config.instruction or self.DEFAULT_INSTRUCTION
             rj_instruction = RelevanceJudgementInstruction(instruction=instruction_text, fulltext=state.fulltext)
 
-            state.relevance_judgement, total_token = llm_service.generate(model, state.memory, rj_instruction, RelevanceJudgement)
+            state.relevance_judgement, total_token, thinking = llm_service.generate(model, state.memory, rj_instruction, RelevanceJudgement)
+            thinking_token = llm_service.get_tokenizer(model.name)(thinking) if thinking else None
             qrel_label = qrels.get(state.topic.id, click_docid, default=0)
 
             output = RelevanceJudgementExperimentOutput(
@@ -201,7 +208,9 @@ class RelevanceJudgementStage:
                 docid = click_docid,
                 label = f"{state.relevance_judgement.label}",
                 qrel_label=qrel_label,
-                total_token=total_token
+                total_token = total_token,
+                thinking = thinking,
+                thinking_token = thinking_token
             )
             print(output.to_json(ensure_ascii=False))
 
@@ -225,7 +234,8 @@ class QueryReFormulationStage:
         instruction_text = self.config.instruction or self.DEFAULT_INSTRUCTION
         qrf_instruction = QueryReFormulationInstruction(instruction=instruction_text)
 
-        state.query, total_token = llm_service.generate(model, state.memory, qrf_instruction, Query)
+        state.query, total_token, thinking = llm_service.generate(model, state.memory, qrf_instruction, Query)
+        thinking_token = llm_service.get_tokenizer(model.name)(thinking) if thinking else None
 
         output = QueryReformulationExperimentOutput(
             session_name = settings.name,
@@ -236,7 +246,9 @@ class QueryReFormulationStage:
             query = state.query.query,
             start = settings.task.start_offset,
             size=settings.task.serp_size,
-            total_token=total_token
+            total_token = total_token,
+            thinking = thinking,
+            thinking_token = thinking_token
         )
         print(output.to_json(ensure_ascii=False))
 
@@ -261,7 +273,8 @@ class NextActionStage:
         instruction_text = self.config.instruction or self.DEFAULT_INSTRUCTION
         next_action_instruction = NextActionInstruction(instruction=instruction_text, task=settings.task)
 
-        state.next_action, total_token = llm_service.generate(model, state.memory, next_action_instruction, NextAction)
+        state.next_action, total_token, thinking = llm_service.generate(model, state.memory, next_action_instruction, NextAction)
+        thinking_token = llm_service.get_tokenizer(model.name)(thinking) if thinking else None
 
         action_name = None
         if state.next_action and state.next_action.action:
@@ -276,7 +289,9 @@ class NextActionStage:
             action = action_name,
             action_num = state.action_num,
             reason = state.next_action.reason,
-            total_token = total_token
+            total_token = total_token,
+            thinking = thinking,
+            thinking_token = thinking_token
         )
         print(output.to_json(ensure_ascii=False))
 

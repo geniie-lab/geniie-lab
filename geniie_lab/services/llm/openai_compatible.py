@@ -50,14 +50,38 @@ class OpenAICompatibleLLMService:
         memory: ConversationHistory,
         instruction: Instruction,
         response_model: Type[T],
-    ) -> Tuple[T, int]:
-        """Ask the model to respond to the instruction as a response_model."""
+    ) -> Tuple[T, int, str | None]:
+        """Ask the model to respond to the instruction as a response_model.
+
+        Returns (parsed, total_token, thinking): thinking is the model's
+        reasoning trace when the provider exposes one (reasoning models served
+        with a reasoning parser), None otherwise. It is captured for logging
+        only and never fed back into the conversation history.
+        """
         call = (self._call_llm_with_prompted_schema if self._schema_via_prompt
                 else self._call_llm_with_pydantic_response)
         return call(
             model.name, model.token_length, model.temperature, model.top_p,
             memory, instruction, response_model,
+            thinking_token_budget=model.thinking_token_budget,
         )
+
+    @staticmethod
+    def _extract_thinking(message) -> str | None:
+        # vLLM (openai_gptoss/qwen3/nemotron parsers) and Bedrock all expose
+        # the trace as message.reasoning; reasoning_content is the documented
+        # older field name, kept as a fallback. Both absent on non-reasoning
+        # models.
+        return (getattr(message, "reasoning", None)
+                or getattr(message, "reasoning_content", None))
+
+    @staticmethod
+    def _budget_kwargs(thinking_token_budget: int | None) -> dict:
+        # vLLM enforces the cap server-side (qwen3/deepseek_r1 parsers);
+        # providers that predate the field ignore it silently.
+        if thinking_token_budget is None:
+            return {}
+        return {"extra_body": {"thinking_token_budget": thinking_token_budget}}
 
     def _call_llm_with_pydantic_response(
         self,
@@ -67,8 +91,9 @@ class OpenAICompatibleLLMService:
         top_p: float,
         memory: ConversationHistory,
         instruction: Instruction,
-        response_model: Type[T]
-    ) -> Tuple[T, int]:
+        response_model: Type[T],
+        thinking_token_budget: int | None = None,
+    ) -> Tuple[T, int, str | None]:
 
         memory.add_user_message(instruction.generate())
         # Pass roles through unchanged: the system prompt and previous assistant
@@ -80,6 +105,7 @@ class OpenAICompatibleLLMService:
             response_format=response_model,
             temperature=temperature,
             top_p=top_p,
+            **self._budget_kwargs(thinking_token_budget),
         )
         parsed_response = completion.choices[0].message.parsed
         if parsed_response is None:
@@ -89,7 +115,7 @@ class OpenAICompatibleLLMService:
         usage = getattr(completion, "usage", None)
         total_token = getattr(usage, "total_tokens", 0) or 0
 
-        return parsed_response, total_token
+        return parsed_response, total_token, self._extract_thinking(completion.choices[0].message)
 
     def _call_llm_with_prompted_schema(
         self,
@@ -99,8 +125,9 @@ class OpenAICompatibleLLMService:
         top_p: float,
         memory: ConversationHistory,
         instruction: Instruction,
-        response_model: Type[T]
-    ) -> Tuple[T, int]:
+        response_model: Type[T],
+        thinking_token_budget: int | None = None,
+    ) -> Tuple[T, int, str | None]:
         tokenizer = self.get_tokenizer(model)
         schema_suffix = (
             "\n\nRespond with ONLY a JSON object that conforms to this JSON schema:\n"
@@ -128,6 +155,7 @@ class OpenAICompatibleLLMService:
                 response_format={"type": "json_object"},
                 temperature=temperature,
                 top_p=top_p,
+                **self._budget_kwargs(thinking_token_budget),
             )
             usage = getattr(completion, "usage", None)
             call_tokens = getattr(usage, "total_tokens", 0) or 0
@@ -147,7 +175,7 @@ class OpenAICompatibleLLMService:
                 ]
                 continue
             memory.add_assistant_response(completion.choices[0].message.to_json())
-            return parsed_response, total_token
+            return parsed_response, total_token, self._extract_thinking(completion.choices[0].message)
         raise ValueError(
             f"LLM response failed {response_model.__name__} validation after "
             f"{self.MAX_SCHEMA_RETRIES} attempts: {last_error}"

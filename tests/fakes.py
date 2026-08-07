@@ -19,6 +19,7 @@ from geniie_lab.response import (
 )
 
 FAKE_TOTAL_TOKEN = 42
+FAKE_THINKING = "fake reasoning trace"
 
 FakeQuery = namedtuple("FakeQuery", ["query_id", "title", "description", "narrative"])
 FakeQrel = namedtuple("FakeQrel", ["query_id", "doc_id", "relevance"])
@@ -81,7 +82,7 @@ class FakeLLMService:
         response = self._canned_response(instruction, response_model)
         memory.add_user_message(instruction.generate())
         memory.add_assistant_response(response.model_dump_json())
-        return response, FAKE_TOTAL_TOKEN
+        return response, FAKE_TOTAL_TOKEN, FAKE_THINKING
 
     def get_tokenizer(self, model_name):
         return lambda text: len(text)
