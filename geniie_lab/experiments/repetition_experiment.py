@@ -71,7 +71,7 @@ class QueryFormulationStage:
             thinking = thinking,
             thinking_token = thinking_token
         )
-        print(output.to_json(ensure_ascii=False))
+        print(output.to_json(ensure_ascii=False), flush=True)
         return state
 
 class RankingStage:
@@ -116,7 +116,7 @@ class RankingStage:
             performance=results,
             repetition=repetition
         )
-        print(output.to_json(ensure_ascii=False))
+        print(output.to_json(ensure_ascii=False), flush=True)
         return state
     
 class ClickStage:
@@ -151,7 +151,7 @@ class ClickStage:
             thinking = thinking,
             thinking_token = thinking_token
         )
-        print(output.to_json(ensure_ascii=False))
+        print(output.to_json(ensure_ascii=False), flush=True)
 
         return state
 
@@ -214,7 +214,7 @@ class RelevanceJudgementStage:
                 thinking = thinking,
                 thinking_token = thinking_token
             )
-            print(output.to_json(ensure_ascii=False))
+            print(output.to_json(ensure_ascii=False), flush=True)
 
         return state
 
@@ -253,7 +253,7 @@ class QueryReFormulationStage:
             thinking = thinking,
             thinking_token = thinking_token
         )
-        print(output.to_json(ensure_ascii=False))
+        print(output.to_json(ensure_ascii=False), flush=True)
 
         return state
     
