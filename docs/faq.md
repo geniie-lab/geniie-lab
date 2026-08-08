@@ -23,3 +23,5 @@ We do not currently support a canonical document as input. We will look into thi
 
 ## Are there any tools to analyse the output data?
 No, we decided not to include analytics tools as part of `geniie-lab` since how to analyse response data closely depends on diverse research questions formulated by researchers.
+## What happens when an LLM returns invalid JSON?
+`geniie-lab` handles it automatically, in a fixed order: 1) deterministic rule-based repair (code fences, stray prose, broken escapes, truncation — the same raw output always repairs the same way, no model round-trip), 2) if still invalid, a bounded validation-feedback retry (max 3 attempts; the failed exchange is kept out of session memory and all attempts' tokens are counted in `total_token`), 3) if still invalid, the topic is skipped with a `[WARNING]` in the log and the experiment continues. Every repair, retry, and skip is reported on stderr, so recoveries are visible and quantifiable. See [Invalid JSON handling policy](advanced/json_handling.md) for the full rationale.

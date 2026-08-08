@@ -2,6 +2,8 @@
 
 Although the [parameters](../parameters.md) in `ExperimentalSettings` allow researchers to configure many aspects of the experiment, one might wish to control the experiment in depth. Here, we illustrate some directions.
 
+See also: [Invalid JSON handling policy](json_handling.md) — how malformed structured outputs are repaired, retried, and, as a last resort, skipped per topic.
+
 ## Responses
 If you would like to change the format of GII reponses, edit `geniie-lab/response.py`, where structured outputs are defined for LLMs. You can add/remove fields using pydantic format.
 
