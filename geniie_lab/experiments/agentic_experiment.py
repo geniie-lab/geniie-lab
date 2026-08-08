@@ -70,6 +70,7 @@ class QueryFormulationStage:
             query = state.query.query,
             start = settings.task.start_offset,
             size = settings.task.serp_size,
+            reason = state.query.reason,
             total_token = total_token,
             thinking = thinking,
             thinking_token = thinking_token
@@ -150,6 +151,7 @@ class ClickStage:
             dataset=settings.topicset.name,
             topic_id=state.topic.id,
             rankings=state.clicks.ranking_list,
+            reason = state.clicks.reason,
             total_token = total_token,
             thinking = thinking,
             thinking_token = thinking_token
@@ -254,6 +256,7 @@ class QueryReFormulationStage:
             query = state.query.query,
             start = settings.task.start_offset,
             size=settings.task.serp_size,
+            reason = state.query.reason,
             total_token = total_token,
             thinking = thinking,
             thinking_token = thinking_token

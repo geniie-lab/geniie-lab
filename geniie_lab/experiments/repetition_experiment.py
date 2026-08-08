@@ -69,6 +69,7 @@ class QueryFormulationStage:
             start = settings.task.start_offset,
             size = settings.task.serp_size,
             repetition = repetition,
+            reason = state.query.reason,
             total_token = total_token,
             thinking = thinking,
             thinking_token = thinking_token
@@ -151,6 +152,7 @@ class ClickStage:
             topic_id=state.topic.id,
             rankings=state.clicks.ranking_list,
             repetition=repetition,
+            reason = state.clicks.reason,
             total_token = total_token,
             thinking = thinking,
             thinking_token = thinking_token
@@ -257,6 +259,7 @@ class QueryReFormulationStage:
             start = settings.task.start_offset,
             size = settings.task.serp_size,
             repetition = repetition,
+            reason = state.query.reason,
             total_token = total_token,
             thinking = thinking,
             thinking_token = thinking_token
