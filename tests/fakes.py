@@ -7,6 +7,7 @@ import json
 from collections import namedtuple
 from typing import List
 
+from geniie_lab.dataclasses.instruction import QueryReFormulationInstruction
 from geniie_lab.dataclasses.serp import FullText, SearchResultItem, Serp
 from geniie_lab.response import (
     Action,
@@ -18,6 +19,7 @@ from geniie_lab.response import (
 )
 
 FAKE_TOTAL_TOKEN = 42
+FAKE_THINKING = "fake reasoning trace"
 
 FakeQuery = namedtuple("FakeQuery", ["query_id", "title", "description", "narrative"])
 FakeQrel = namedtuple("FakeQrel", ["query_id", "doc_id", "relevance"])
@@ -52,51 +54,35 @@ def default_dataset() -> FakeDataset:
 class FakeLLMService:
     """Implements LLMServiceProtocol with canned responses.
 
-    `calls` records (method_name, history_len_before_call) so tests can assert
-    memory-cloning semantics. `next_actions` is a FIFO of Action values for
-    decide_next_action; when exhausted it returns END_TASK.
+    `calls` records (response_model_name, history_len_before_call) so tests
+    can assert memory-cloning semantics. `next_actions` is a FIFO of Action
+    values for NextAction responses; when exhausted it returns END_TASK.
     """
 
     def __init__(self, next_actions: List[Action] | None = None):
         self.calls: list[tuple[str, int]] = []
         self.next_actions: list[Action] = list(next_actions or [])
 
-    def _respond(self, method, memory, instruction, response):
-        self.calls.append((method, len(memory._history)))
+    def _canned_response(self, instruction, response_model):
+        if response_model is Query:
+            if isinstance(instruction, QueryReFormulationInstruction):
+                return Query(query="reformulated query", start=0, size=10, reason="try again")
+            return Query(query="first query", start=0, size=10, reason="initial query")
+        if response_model is Clicks:
+            return Clicks(ranking_list=[1], reason="top result looks relevant")
+        if response_model is RelevanceJudgement:
+            return RelevanceJudgement(label=Relevance.RELEVANT, reason="on topic")
+        if response_model is NextAction:
+            action = self.next_actions.pop(0) if self.next_actions else Action.END_TASK
+            return NextAction(action=action, reason="fake decision")
+        raise AssertionError(f"unexpected response model: {response_model}")
+
+    def generate(self, model, memory, instruction, response_model):
+        self.calls.append((response_model.__name__, len(memory._history)))
+        response = self._canned_response(instruction, response_model)
         memory.add_user_message(instruction.generate())
         memory.add_assistant_response(response.model_dump_json())
-        return response, FAKE_TOTAL_TOKEN
-
-    def create_query(self, model, token_length, temperature, top_p, memory, instruction):
-        return self._respond(
-            "create_query", memory, instruction,
-            Query(query="first query", start=0, size=10, reason="initial query"),
-        )
-
-    def recreate_query(self, model, token_length, temperature, top_p, memory, instruction):
-        return self._respond(
-            "recreate_query", memory, instruction,
-            Query(query="reformulated query", start=0, size=10, reason="try again"),
-        )
-
-    def create_clicks(self, model, token_length, temperature, top_p, memory, instruction):
-        return self._respond(
-            "create_clicks", memory, instruction,
-            Clicks(ranking_list=[1], reason="top result looks relevant"),
-        )
-
-    def calc_relevance_judgement(self, model, token_length, temperature, top_p, memory, instruction):
-        return self._respond(
-            "calc_relevance_judgement", memory, instruction,
-            RelevanceJudgement(label=Relevance.RELEVANT, reason="on topic"),
-        )
-
-    def decide_next_action(self, model, token_length, temperature, top_p, memory, instruction):
-        action = self.next_actions.pop(0) if self.next_actions else Action.END_TASK
-        return self._respond(
-            "decide_next_action", memory, instruction,
-            NextAction(action=action, reason="fake decision"),
-        )
+        return response, FAKE_TOTAL_TOKEN, FAKE_THINKING
 
     def get_tokenizer(self, model_name):
         return lambda text: len(text)

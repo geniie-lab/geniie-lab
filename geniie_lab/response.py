@@ -52,8 +52,22 @@ class Clicks(BaseModel):
         ...,
         title="ranking_list",
         description=(
-            "The ranking number of the documents in the result to examine the full text. "
-        )
+            "The ranking numbers of the documents in the result to examine the full text. "
+            'Each element is one ranking number as a numeric string, e.g. ["2", "5", "7"]. '
+            "Use ranking numbers, not document IDs."
+        ),
+        # Prevention layer, from strongest to weakest:
+        #  - "type": "string"  — Groq's constrained decoder drops commas between
+        #    bare integers ([2, 9] arrives as [29]); quoted items force separators.
+        #  - "pattern": "^[0-9]{1,3}$" — grammar-enforcing providers can then ONLY
+        #    emit digit strings, making document IDs ("LA043090-0036") impossible.
+        #  - the description's example and "not document IDs" steer providers that
+        #    enforce schemas loosely (local vLLM).
+        # pydantic coerces each "2" back to int, so ranking_list stays List[int]
+        # for all downstream code.
+        json_schema_extra=lambda schema: schema.update(
+            {"items": {"type": "string", "pattern": "^[0-9]{1,3}$"}}
+        ),
     )
     reason: str = Field(
         ...,

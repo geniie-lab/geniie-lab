@@ -30,6 +30,7 @@ from geniie_lab.dataclasses.output import (
     RelevanceJudgementExperimentOutput,
 )
 from geniie_lab.memory import ConversationHistory
+from geniie_lab.response import Clicks, Query, RelevanceJudgement
 from geniie_lab.services.llm.llm_service_factory import LLMServiceFactory
 from geniie_lab.services.llm.llm_service_protocol import LLMServiceProtocol
 from geniie_lab.services.measure_service import MeasureService, Qrels, Run
@@ -54,7 +55,10 @@ class QueryFormulationStage:
         instruction_text = self.config.instruction or self.DEFAULT_INSTRUCTION
         qf_instruction = QueryFormulationInstruction(instruction=instruction_text, task=settings.task, corpus=settings.corpus, tool=tool, topic=state.topic)
 
-        state.query, total_token = llm_service.create_query(model.name, model.token_length, model.temperature, model.top_p, state.memory, qf_instruction)
+        state.query, total_token, thinking = llm_service.generate(model, state.memory, qf_instruction, Query)
+        thinking_token = llm_service.get_tokenizer(model.name)(thinking) if thinking else None
+        if not self.config.log_thinking:
+            thinking = None
 
         output = QueryExperimentOutput(
             session_name = settings.name,
@@ -65,9 +69,12 @@ class QueryFormulationStage:
             query = state.query.query,
             start = settings.task.start_offset,
             size = settings.task.serp_size,
-            total_token = total_token
+            reason = state.query.reason,
+            total_token = total_token,
+            thinking = thinking,
+            thinking_token = thinking_token
         )
-        print(output.to_json(ensure_ascii=False))
+        print(output.to_json(ensure_ascii=False), flush=True)
         return state
 
 class RankingStage:
@@ -111,7 +118,7 @@ class RankingStage:
             size=settings.task.serp_size,
             performance=results
         )
-        print(output.to_json(ensure_ascii=False))
+        print(output.to_json(ensure_ascii=False), flush=True)
         return state
     
 class ClickStage:
@@ -131,7 +138,10 @@ class ClickStage:
         instruction_text = self.config.instruction or self.DEFAULT_INSTRUCTION
         click_instruction = ClickInstruction(instruction=instruction_text, serp=state.serp)
 
-        state.clicks, total_token = llm_service.create_clicks(model.name, model.token_length, model.temperature, model.top_p, state.memory, click_instruction)
+        state.clicks, total_token, thinking = llm_service.generate(model, state.memory, click_instruction, Clicks)
+        thinking_token = llm_service.get_tokenizer(model.name)(thinking) if thinking else None
+        if not self.config.log_thinking:
+            thinking = None
 
         output = ClickExperimentOutput(
             session_name=settings.name,
@@ -140,9 +150,12 @@ class ClickStage:
             dataset=settings.topicset.name,
             topic_id=state.topic.id,
             rankings=state.clicks.ranking_list,
-            total_token=total_token
+            reason = state.clicks.reason,
+            total_token = total_token,
+            thinking = thinking,
+            thinking_token = thinking_token
         )
-        print(output.to_json(ensure_ascii=False))
+        print(output.to_json(ensure_ascii=False), flush=True)
 
         return state
 
@@ -157,8 +170,14 @@ class RelevanceJudgementStage:
         self.config = config
 
     def run(self, settings: ExperimentSettings, state: ExperimentState, llm_service: LLMServiceProtocol, model: ModelDescription, tool: ToolDescription, opensearch_client: OpenSearchClientProtocol) -> ExperimentState:
-        if not state.clicks or not state.serp or not state.clicks.ranking_list:
-            state.error = "Clicks/SERP not found or no documents clicked, cannot run RelevanceJudgementStage."
+        if not state.clicks or not state.serp:
+            state.error = "Clicks/SERP not found, cannot run RelevanceJudgementStage."
+            return state
+        if not state.clicks.ranking_list:
+            # An empty click list is a legitimate agent decision, not an
+            # error: skip the judgements and let the session continue with
+            # the rest of the plan (e.g. reformulate in the next iteration).
+            print("\n--- Skipping: Relevance Judgement Stage (no documents clicked) ---", file=sys.stderr)
             return state
 
         dataset = ir_datasets.load(settings.topicset.name)
@@ -187,7 +206,10 @@ class RelevanceJudgementStage:
             instruction_text = self.config.instruction or self.DEFAULT_INSTRUCTION
             rj_instruction = RelevanceJudgementInstruction(instruction=instruction_text, fulltext=state.fulltext)
 
-            state.relevance_judgement, total_token = llm_service.calc_relevance_judgement(model.name, model.token_length, model.temperature, model.top_p, state.memory, rj_instruction)
+            state.relevance_judgement, total_token, thinking = llm_service.generate(model, state.memory, rj_instruction, RelevanceJudgement)
+            thinking_token = llm_service.get_tokenizer(model.name)(thinking) if thinking else None
+            if not self.config.log_thinking:
+                thinking = None
 
             qrel_label = qrels.get(state.topic.id, click_docid, default=0)
 
@@ -200,9 +222,11 @@ class RelevanceJudgementStage:
                 docid = click_docid,
                 label = f"{state.relevance_judgement.label}",
                 qrel_label=qrel_label,
-                total_token=total_token
+                total_token = total_token,
+                thinking = thinking,
+                thinking_token = thinking_token
             )
-            print(output.to_json(ensure_ascii=False))
+            print(output.to_json(ensure_ascii=False), flush=True)
 
         return state
 
@@ -224,7 +248,10 @@ class QueryReFormulationStage:
         instruction_text = self.config.instruction or self.DEFAULT_INSTRUCTION
         qrf_instruction = QueryReFormulationInstruction(instruction=instruction_text)
 
-        state.query, total_token = llm_service.recreate_query(model.name, model.token_length, model.temperature, model.top_p, state.memory,  qrf_instruction)
+        state.query, total_token, thinking = llm_service.generate(model, state.memory, qrf_instruction, Query)
+        thinking_token = llm_service.get_tokenizer(model.name)(thinking) if thinking else None
+        if not self.config.log_thinking:
+            thinking = None
 
         output = QueryReformulationExperimentOutput(
             session_name = settings.name,
@@ -235,9 +262,12 @@ class QueryReFormulationStage:
             query = state.query.query,
             start = settings.task.start_offset,
             size=settings.task.serp_size,
-            total_token=total_token
+            reason = state.query.reason,
+            total_token = total_token,
+            thinking = thinking,
+            thinking_token = thinking_token
         )
-        print(output.to_json(ensure_ascii=False))
+        print(output.to_json(ensure_ascii=False), flush=True)
 
         return state
     
@@ -351,7 +381,10 @@ class ExperimentRunner:
 
                     for stage_name in self.settings.plan:
                         stage_runner = self.stage_runners[stage_name]
-                        state = stage_runner.run(self.settings, state, llm_service, model, tool, opensearch_client)
+                        try:
+                            state = stage_runner.run(self.settings, state, llm_service, model, tool, opensearch_client)
+                        except ValueError as error:
+                            state.error = f"unrecoverable LLM output: {error}"
                         if state.error:
                             print(f"[WARNING] in stage '{stage_name}': {state.error}. Stopping pipeline for this topic.", file=sys.stderr)
                             state.error = None

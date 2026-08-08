@@ -35,6 +35,11 @@ class OpenSearchClientSplade:
             verify_certs=False,
             ssl_assert_hostname=False,
             ssl_show_warn=False,
+            # Nested neural queries on chunked indexes can exceed the 10s
+            # default read timeout under load.
+            timeout=60,
+            retry_on_timeout=True,
+            max_retries=2,
         )
         self.index_name = index_name
         self.dataset = ir_datasets.load(dataset_name)
@@ -75,19 +80,35 @@ class OpenSearchClientSplade:
         search_body = {
             "from": start,
             "size": size,
+            # Documents are chunked at indexing time; per-passage sparse
+            # vectors live in the nested text_chunks_embedding field. The
+            # query is encoded client-side (participants' OpenSearch users
+            # have no ML-plugin permissions), so raw query_tokens are sent.
             "query": {
-                "neural_sparse": {
-                    "sparse_embedding": {
-                        "query_tokens": dict(query_embedding[0])
+                "nested": {
+                    "path": "text_chunks_embedding",
+                    "score_mode": "max",  # best-matching passage sets the doc score
+                    "query": {
+                        "neural_sparse": {
+                            "text_chunks_embedding.sparse_encoding": {
+                                "query_tokens": dict(query_embedding[0])
+                            }
+                        }
                     }
                 }
+            },
+            "_source": {
+                "excludes": ["text_chunks_embedding"]
             },
             "highlight": {
                 "fields": {
                     "text": {
                         "type": "plain",
                         "fragment_size": 150,
-                        "number_of_fragments": 1
+                        "number_of_fragments": 1,
+                        # The nested neural query carries no lexical terms for
+                        # the highlighter; highlight against the raw query text.
+                        "highlight_query": {"match": {"text": query}}
                     }
                 }
             }

@@ -16,14 +16,14 @@ def test_last_stage_repeats_with_repetition_numbers(patched_services, capsys):
 
 
 def test_each_repetition_starts_from_cloned_base_memory(patched_services, capsys):
-    # Every repeated create_query call must see the same (empty) base history:
+    # Every repeated query-generation call must see the same (empty) base history:
     # the runner clones base memory before each repetition instead of letting
     # repetitions contaminate one another.
     settings = make_settings(plan=["query"], loop_num_per_topic=3)
     ExperimentRunner(settings=settings).run()
     capsys.readouterr()
 
-    assert [call for call in patched_services.llm.calls] == [("create_query", 0)] * 6
+    assert [call for call in patched_services.llm.calls] == [("Query", 0)] * 6
 
 
 def test_prefix_stages_run_once_and_are_shared_by_repetitions(patched_services, capsys):
@@ -40,7 +40,7 @@ def test_prefix_stages_run_once_and_are_shared_by_repetitions(patched_services, 
     clicks = [r for r in records if r["stage"] == "click"]
     assert [r["repetition"] for r in clicks] == [1, 2, 1, 2]
 
-    click_calls = [c for c in patched_services.llm.calls if c[0] == "create_clicks"]
+    click_calls = [c for c in patched_services.llm.calls if c[0] == "Clicks"]
     # 2 topics x 2 repetitions, each starting from the cloned base history of
     # exactly 2 messages (user instruction + assistant response of the query stage).
-    assert click_calls == [("create_clicks", 2)] * 4
+    assert click_calls == [("Clicks", 2)] * 4

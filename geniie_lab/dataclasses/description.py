@@ -33,6 +33,15 @@ class ModelDescription:
     top_p: Optional[float] = 1.0
     system_prompt: Optional[str] = "You're a helpful assistant"
     system_role: Optional[str] = None
+    # Cap on reasoning tokens for reasoning models, enforced server-side by
+    # vLLM (qwen3/deepseek_r1 parsers; pair with a reasoning_end_str transition
+    # phrase in the server's --reasoning-config for a graceful cut-off).
+    # None = uncapped; ignored by providers without the feature.
+    thinking_token_budget: Optional[int] = None
+    # Reasoning-effort dial for models trained with one (gpt-oss:
+    # "low" | "medium" | "high"; the model plans its own reasoning length).
+    # None = provider default; ignored by models without the knob.
+    reasoning_effort: Optional[str] = None
 
 @dataclass
 class ToolDescription:

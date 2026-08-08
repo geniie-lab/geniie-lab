@@ -36,6 +36,11 @@ class OpenSearchClientDPR:
             verify_certs=False,
             ssl_assert_hostname=False,
             ssl_show_warn=False,
+            # Nested neural queries on chunked indexes can exceed the 10s
+            # default read timeout under load.
+            timeout=60,
+            retry_on_timeout=True,
+            max_retries=2,
         )
         self.index_name = index_name
         self.dataset = ir_datasets.load(dataset_name)
@@ -66,16 +71,16 @@ class OpenSearchClientDPR:
 
     def generate_snippet(
         self,
-        passage_chunks: List[dict],
+        passage_chunks: List[str],
         query: str,
         max_segments: int = 1,
         max_segment_length: int = 150
     ) -> str:
         """
-        Generate a snippet composed of the top N segments (passage chunks)
-        that match the query terms, based on lexical overlap.
+        Generate a snippet composed of the top N passages that match the
+        query terms, based on lexical overlap.
 
-        :param passage_chunks: List of passage chunk dicts.
+        :param passage_chunks: List of passage texts (the text_chunks field).
         :param query: User query string.
         :param max_segments: Number of segments to return.
         :param max_segment_length: Max characters per segment.
@@ -86,21 +91,16 @@ class OpenSearchClientDPR:
 
         query_terms = set(re.findall(r'\w+', query.lower()))
 
-        # Score chunks by number of query term overlaps
-        def score_chunk(chunk):
-            text = chunk.get("text", "")
+        # Score passages by number of query term overlaps
+        def score_chunk(text: str) -> int:
             words = re.findall(r'\w+', text.lower())
             return sum(1 for w in words if w in query_terms)
 
-        # Sort chunks by overlap score (descending)
+        # Sort passages by overlap score (descending)
         ranked_chunks = sorted(passage_chunks, key=score_chunk, reverse=True)
 
         # Take top N and clean/truncate
-        selected = []
-        for chunk in ranked_chunks[:max_segments]:
-            raw = chunk.get("text", "")
-            clean = self.clean_text(raw)[:max_segment_length]
-            selected.append(clean)
+        selected = [self.clean_text(raw)[:max_segment_length] for raw in ranked_chunks[:max_segments]]
 
         return " ... ".join(selected) if selected else "No snippet available"
 
@@ -114,13 +114,18 @@ class OpenSearchClientDPR:
         search_body = {
             "from": start,
             "size": size,
+            # Documents are chunked at indexing time; per-passage dense
+            # vectors live in the nested text_chunks_embedding field and the
+            # passage texts in the parallel top-level text_chunks array. The
+            # query is encoded client-side (participants' OpenSearch users
+            # have no ML-plugin permissions), so a raw vector is sent.
             "query": {
                 "nested": {
-                    "path": "passage_chunk",
-                    "score_mode": "max",
+                    "path": "text_chunks_embedding",
+                    "score_mode": "max",  # best-matching passage sets the doc score
                     "query": {
                         "knn": {
-                            "passage_chunk.embedding": {
+                            "text_chunks_embedding.knn": {
                                 "vector": query_vector,
                                 "k": size
                             }
@@ -129,8 +134,7 @@ class OpenSearchClientDPR:
                 }
             },
             "_source": {
-                "includes": ["docid", "title", "passage_chunk"],
-                "excludes": ["passage_chunk.embedding"]
+                "includes": ["docid", "title", "text_chunks"]
             }
         }
         response = self.client.search(index=self.index_name, body=search_body)
@@ -140,7 +144,7 @@ class OpenSearchClientDPR:
         items: List[SearchResultItem] = []
         for idx, hit in enumerate(response.get("hits", {}).get("hits", []), start=1):
             src = hit.get("_source", {})
-            passage_chunks = src.get("passage_chunk", [])
+            passage_chunks = src.get("text_chunks", [])
 
             snippet_text = self.generate_snippet(passage_chunks, query=query)
 
