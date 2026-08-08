@@ -361,7 +361,10 @@ class ExperimentRunner:
                     # Run all stages except the last one once, and accumulate memory
                     for stage_name in self.settings.plan[:-1]:
                         stage_runner = self.stage_runners[stage_name]
-                        state = stage_runner.run(self.settings, state, llm_service, model, tool, opensearch_client, repetition=1)
+                        try:
+                            state = stage_runner.run(self.settings, state, llm_service, model, tool, opensearch_client, repetition=1)
+                        except ValueError as error:
+                            state.error = f"unrecoverable LLM output: {error}"
                         if state.error:
                             print(f"[WARNING] in stage '{stage_name}': {state.error}. Stopping pipeline for this topic.", file=sys.stderr)
                             state.error = None
@@ -377,7 +380,10 @@ class ExperimentRunner:
                         # Reset state for the last stage
                         llm_service = self.llm_factory.create_llm_service(model.type)
                         state.memory = base_memory.clone()
-                        state = stage_runner.run(self.settings, state, llm_service, model, tool, opensearch_client, repetition=i+1)
+                        try:
+                            state = stage_runner.run(self.settings, state, llm_service, model, tool, opensearch_client, repetition=i+1)
+                        except ValueError as error:
+                            state.error = f"unrecoverable LLM output: {error}"
                         if state.error:
                             print(f"[WARNING] in stage '{last_stage}' (loop {i+1}): {state.error}. Stopping pipeline for this topic.", file=sys.stderr)
                             state.error = None
