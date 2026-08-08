@@ -22,6 +22,8 @@ The following parameters can be configured via `ExperimentSettings` in the runne
 |Model|All|`system_prompt`|You're a helpful assistant|A system (development) prompt|
 |Model|All|`temperature`|0.0|Temperature of the model (Default: 0.0)|
 |Model|All|`top_p`|1.0|Nucleus (top-p) sampling probability, applied consistently across all LLM types (Default: 1.0)|
+|Model|All|`thinking_token_budget`|1024|Reasoning models only: hard server-side cap on reasoning tokens per call, as a runaway guard. Enforced by vLLM's qwen3-class reasoning parsers; silently ignored by providers without the feature. Pair with a transition phrase in the server's `--reasoning-config reasoning_end_str` for a graceful cut. `None` means uncapped (Default: `None`)|
+|Model|All|`reasoning_effort`|low|gpt-oss models only: trained-in reasoning-length dial, `low`, `medium`, or `high`. The model plans its own reasoning depth; ignored by models without the knob. `None` means the provider default (Default: `None`)|
 |Tool|All|`name`|opensearch|Name of search tool|
 |Tool|All|`ranking_model`|bm25|Name of ranking model used by the tool|
 |Tool|All|`encode_model`|opensearch-project/opensearch-neural-sparse-encoding-multilingual-v1|Name of the encoder model used by sparse/dense ranking models such as `splade` and `dpr`. Not needed for `bm25` (Default: `None`)|
@@ -31,6 +33,7 @@ The following parameters can be configured via `ExperimentSettings` in the runne
 |Tool|All|`use_ssl`|True|Whether to connect to opensearch over SSL (Default: `True`)|
 |Tool|All|`description`|It allows you to perform searches using keywords only and employs the BM25 ranking model to order results.|Description of the tool, query syntax (if any), and ranking model.|
 |Stage|All|`instruction`|Review the provided descriptions of task, corpus, tool and search topic. Then, formulate a search query.|Instruction given to GII for each of the stages.|
+|Stage|All|`log_thinking`|True|Reasoning models only: opt-in logging of the stage's reasoning-trace *text* into the session log's `thinking` field. `thinking_token` (the trace's estimated token count) is always recorded regardless, so per-stage thinking cost stays measurable (Default: `False`)|
 |Other|Session, Repetition|`plan`|\["query", "ranking", "click", "relevance", "reformulate", "ranking"\]|A series of search stages to be executed as a single session.|
 |Other|Repetition|`loop_num_per_topic`|2|Number of repetition for the last stage (Default: 1)|
 |Other|Agentic|`max_actions`|5|The maximum number of actions to be taken before termination (Default: `None`)|
