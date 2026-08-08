@@ -178,7 +178,13 @@ class OpenAICompatibleLLMService:
             if repairs:
                 print(f"[json-repair] repaired {response_model.__name__} "
                       f"with rules {repairs}", file=sys.stderr)
-            memory.add_assistant_response(message.to_json())
+            # Store the assistant's content only — not the serialized message
+            # envelope, which on reasoning-parser deployments includes the
+            # full reasoning trace and would silently feed it back (and
+            # re-bill it) on every subsequent call. The stated `reason` field
+            # inside the content is the rationale the session remembers;
+            # thinking stays capture-only.
+            memory.add_assistant_response(message.content or "")
             return parsed_response, total_token, self._extract_thinking(message)
         raise ValueError(
             f"LLM response failed {response_model.__name__} validation after "

@@ -72,11 +72,23 @@ def test_call_preserves_roles_and_updates_memory():
     assert stub.calls[0]["response_format"]["type"] == "json_schema"
     assert stub.calls[0]["response_format"]["json_schema"]["name"] == "Query"
 
-    # Memory gains the instruction (user) and the raw completion (assistant).
+    # Memory gains the instruction (user) and the assistant's CONTENT — not
+    # the serialized message envelope, which would leak the reasoning trace
+    # into subsequent turns on reasoning-parser deployments.
     history = memory.get_all_messages()
     assert history[-2]["role"] == "user"
     assert "reformulate" in history[-2]["content"]
-    assert history[-1] == {"role": "assistant", "content": '{"canned": true}'}
+    assert history[-1] == {"role": "assistant", "content": VALID_QUERY_JSON}
+
+
+def test_memory_never_contains_the_thinking_trace():
+    stub = StubClient(VALID_QUERY_JSON, reasoning="chain of thought")
+    (_, _, thinking), memory = _service_call(stub)
+    assert thinking == "chain of thought"
+    stored = " ".join(m["content"] for m in memory.get_all_messages())
+    assert "chain of thought" not in stored
+    # The stated reason DOES persist in memory, for all model kinds.
+    assert '"reason": "r"' in stored
 
 
 def test_schema_via_prompt_appends_schema_to_outgoing_copy_only():
