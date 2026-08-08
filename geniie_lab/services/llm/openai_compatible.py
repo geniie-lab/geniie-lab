@@ -1,5 +1,6 @@
 # Standard library
 import json
+import sys
 from typing import Callable, Tuple, Type, TypeVar
 
 # Third-party libraries
@@ -11,6 +12,7 @@ import tiktoken
 from geniie_lab.dataclasses.description import ModelDescription
 from geniie_lab.dataclasses.instruction import Instruction
 from geniie_lab.memory import ConversationHistory
+from geniie_lab.services.llm.json_repair import repair_and_validate
 
 T = TypeVar("T", bound=BaseModel)
 
@@ -22,9 +24,15 @@ class OpenAICompatibleLLMService:
     or a pre-built client such as AzureOpenAI) and in whether tiktoken should
     look up a model-specific encoding. The provider registry lives in
     llm_service_factory.
+
+    Invalid structured output is handled uniformly (issue #13): deterministic
+    rule-based repair first (json_repair module), then a bounded
+    validation-feedback retry, then a ValueError that the experiment runners
+    turn into skipping the topic. Repairs and retries are reported on stderr
+    so every recovery is visible in the run log.
     """
 
-    #: Attempts per call when schema_via_prompt validation fails.
+    #: Attempts per call when validation fails after repair.
     MAX_SCHEMA_RETRIES = 3
 
     def __init__(
@@ -41,7 +49,7 @@ class OpenAICompatibleLLMService:
         # response_format for open-weight models: strict grammars loop on
         # whitespace and non-strict ones leak stray tokens before the JSON.
         # When set, send the schema in the prompt with json_object mode and
-        # validate the response ourselves instead of using parse().
+        # validate the response ourselves instead.
         self._schema_via_prompt = schema_via_prompt
 
     def generate(
@@ -58,9 +66,7 @@ class OpenAICompatibleLLMService:
         with a reasoning parser), None otherwise. It is captured for logging
         only and never fed back into the conversation history.
         """
-        call = (self._call_llm_with_prompted_schema if self._schema_via_prompt
-                else self._call_llm_with_pydantic_response)
-        return call(
+        return self._call_llm_with_repair(
             model.name, model.token_length, model.temperature, model.top_p,
             memory, instruction, response_model,
             thinking_kwargs=self._thinking_kwargs(model),
@@ -89,41 +95,7 @@ class OpenAICompatibleLLMService:
             extra_body["reasoning_effort"] = model.reasoning_effort
         return {"extra_body": extra_body} if extra_body else {}
 
-    def _call_llm_with_pydantic_response(
-        self,
-        model: str,
-        token_length: int,
-        temperature: float,
-        top_p: float,
-        memory: ConversationHistory,
-        instruction: Instruction,
-        response_model: Type[T],
-        thinking_kwargs: dict = {},
-    ) -> Tuple[T, int, str | None]:
-
-        memory.add_user_message(instruction.generate())
-        # Pass roles through unchanged: the system prompt and previous assistant
-        # turns must not be re-sent as user messages.
-        messages: list[dict[str, str]] = memory.get_messages(tokenizer=self.get_tokenizer(model), max_tokens=token_length)
-        completion = self.client.beta.chat.completions.parse(
-            model=model,
-            messages=messages,
-            response_format=response_model,
-            temperature=temperature,
-            top_p=top_p,
-            **thinking_kwargs,
-        )
-        parsed_response = completion.choices[0].message.parsed
-        if parsed_response is None:
-            raise ValueError(f"LLM returned empty parsed object for {response_model.__name__}.")
-        memory.add_assistant_response(completion.choices[0].message.to_json())
-
-        usage = getattr(completion, "usage", None)
-        total_token = getattr(usage, "total_tokens", 0) or 0
-
-        return parsed_response, total_token, self._extract_thinking(completion.choices[0].message)
-
-    def _call_llm_with_prompted_schema(
+    def _call_llm_with_repair(
         self,
         model: str,
         token_length: int,
@@ -135,30 +107,49 @@ class OpenAICompatibleLLMService:
         thinking_kwargs: dict = {},
     ) -> Tuple[T, int, str | None]:
         tokenizer = self.get_tokenizer(model)
-        schema_suffix = (
-            "\n\nRespond with ONLY a JSON object that conforms to this JSON schema:\n"
-            + json.dumps(response_model.model_json_schema())
-        )
-        # Store only the plain instruction in session memory so bedrock
-        # conversations stay identical to providers that take the schema
-        # out-of-band; the schema rides along on the outgoing copy only.
+
+        # Store only the plain instruction in session memory: with
+        # schema_via_prompt the schema rides along on the outgoing copy only,
+        # so conversations stay identical across providers.
         memory.add_user_message(instruction.generate())
+        # Pass roles through unchanged: the system prompt and previous
+        # assistant turns must not be re-sent as user messages.
         messages: list[dict[str, str]] = memory.get_messages(tokenizer=tokenizer, max_tokens=token_length)
-        messages = messages[:-1] + [
-            {**messages[-1], "content": messages[-1]["content"] + schema_suffix}
-        ]
-        # The schema suffix exists only to work around the provider's broken
-        # response_format; exclude it from the reported count so bedrock
-        # sessions are token-comparable with other providers. The deduction
-        # uses the trimming tokenizer, so it is approximate.
-        schema_tokens = tokenizer(schema_suffix)
+
+        schema_tokens = 0
+        if self._schema_via_prompt:
+            schema_suffix = (
+                "\n\nRespond with ONLY a JSON object that conforms to this JSON schema:\n"
+                + json.dumps(response_model.model_json_schema())
+            )
+            messages = messages[:-1] + [
+                {**messages[-1], "content": messages[-1]["content"] + schema_suffix}
+            ]
+            # The schema suffix exists only to work around the provider's
+            # broken response_format; exclude it from the reported count so
+            # sessions stay token-comparable with providers that take the
+            # schema out-of-band. Approximate (trimming tokenizer).
+            schema_tokens = tokenizer(schema_suffix)
+            response_format = {"type": "json_object"}
+        else:
+            # strict matches what the SDK's parse() helper sent before the
+            # repair rewrite, so grammar enforcement stays as tight as before.
+            response_format = {
+                "type": "json_schema",
+                "json_schema": {
+                    "name": response_model.__name__,
+                    "schema": response_model.model_json_schema(),
+                    "strict": True,
+                },
+            }
+
         total_token = 0
         last_error: Exception | None = None
-        for _ in range(self.MAX_SCHEMA_RETRIES):
+        for attempt in range(self.MAX_SCHEMA_RETRIES):
             completion = self.client.chat.completions.create(
                 model=model,
                 messages=messages,
-                response_format={"type": "json_object"},
+                response_format=response_format,
                 temperature=temperature,
                 top_p=top_p,
                 **thinking_kwargs,
@@ -166,13 +157,17 @@ class OpenAICompatibleLLMService:
             usage = getattr(completion, "usage", None)
             call_tokens = getattr(usage, "total_tokens", 0) or 0
             total_token += max(0, call_tokens - schema_tokens)
-            content = completion.choices[0].message.content or ""
+            message = completion.choices[0].message
+            content = message.content or ""
             try:
-                parsed_response = self._parse_lenient(content, response_model)
+                parsed_response, repairs = repair_and_validate(content, response_model)
             except (ValidationError, ValueError) as error:
-                # Feedback retry: keep the failed exchange out of the session
-                # memory but show it to the model so the next attempt differs.
+                # Bounded feedback retry: keep the failed exchange out of the
+                # session memory but show it to the model so the next attempt
+                # differs. Reported so the recovery is visible in the run log.
                 last_error = error
+                print(f"[json-repair] attempt {attempt + 1}/{self.MAX_SCHEMA_RETRIES} "
+                      f"invalid {response_model.__name__}: {error}", file=sys.stderr)
                 messages = messages + [
                     {"role": "assistant", "content": content},
                     {"role": "user", "content":
@@ -180,30 +175,15 @@ class OpenAICompatibleLLMService:
                         "Respond again with ONLY a valid JSON object for the schema."},
                 ]
                 continue
-            memory.add_assistant_response(completion.choices[0].message.to_json())
-            return parsed_response, total_token, self._extract_thinking(completion.choices[0].message)
+            if repairs:
+                print(f"[json-repair] repaired {response_model.__name__} "
+                      f"with rules {repairs}", file=sys.stderr)
+            memory.add_assistant_response(message.to_json())
+            return parsed_response, total_token, self._extract_thinking(message)
         raise ValueError(
             f"LLM response failed {response_model.__name__} validation after "
             f"{self.MAX_SCHEMA_RETRIES} attempts: {last_error}"
         )
-
-    @staticmethod
-    def _parse_lenient(content: str, response_model: Type[T]) -> T:
-        """Validate content, tolerating stray tokens around the JSON object.
-
-        Providers without a real schema grammar can emit prefixes such as
-        "1,{...}" or "{ {...}" around an otherwise valid object; try each
-        "{"-suffix of the content until one validates.
-        """
-        end = content.rfind("}") + 1
-        starts = [i for i, char in enumerate(content[:end]) if char == "{"]
-        last_error: Exception = ValueError(f"no JSON object found in: {content[:80]!r}")
-        for start in starts:
-            try:
-                return response_model.model_validate_json(content[start:end])
-            except ValidationError as error:
-                last_error = error
-        raise last_error
 
     def get_tokenizer(self, model_name: str) -> Callable[[str], int]:
         if self._tiktoken_by_model:

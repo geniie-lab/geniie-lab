@@ -440,7 +440,10 @@ class ExperimentRunner:
                     state.query.start += self.settings.task.serp_size
 
                 stage_runner = self.stage_runners[stage_name]
-                state = stage_runner.run(self.settings, state, llm_service, model, tool, opensearch_client, stage_name)
+                try:
+                    state = stage_runner.run(self.settings, state, llm_service, model, tool, opensearch_client, stage_name)
+                except ValueError as error:
+                    state.error = f"unrecoverable LLM output: {error}"
 
                 if state.error:
                     print(f"[WARNING] in stage '{stage_name}': {state.error}. Stopping pipeline for this topic.", file=sys.stderr)

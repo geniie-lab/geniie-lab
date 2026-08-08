@@ -378,7 +378,10 @@ class ExperimentRunner:
 
                     for stage_name in self.settings.plan:
                         stage_runner = self.stage_runners[stage_name]
-                        state = stage_runner.run(self.settings, state, llm_service, model, tool, opensearch_client)
+                        try:
+                            state = stage_runner.run(self.settings, state, llm_service, model, tool, opensearch_client)
+                        except ValueError as error:
+                            state.error = f"unrecoverable LLM output: {error}"
                         if state.error:
                             print(f"[WARNING] in stage '{stage_name}': {state.error}. Stopping pipeline for this topic.", file=sys.stderr)
                             state.error = None
