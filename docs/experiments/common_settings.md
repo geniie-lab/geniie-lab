@@ -99,6 +99,10 @@ my_settings = ExperimentSettings(
 - `system_prompt`: A system (development) prompt
 - `temperature`: Temperature of the model (Default: 0.0)
 - `top_p`: Nucleus (top-p) sampling probability, applied consistently across all LLM types (Default: 1.0)
+- `thinking_token_budget`: Reasoning models only — hard server-side cap on reasoning tokens per call (vLLM qwen3-class reasoning parsers; silently ignored elsewhere). `None` means uncapped (Default: `None`)
+- `reasoning_effort`: gpt-oss models only — trained-in reasoning-length dial, `low` | `medium` | `high`. `None` means the provider default (Default: `None`)
+
+See `scripts/run_session_experiment_reasoning.py` for a session template configured for reasoning models, including the recommended vLLM server flags.
 
 ```python
     models=[
@@ -149,6 +153,7 @@ See [Getting Started - OpenSearch](../getting_started/opensearch.md) to learn ho
 Each stage has a name such as `query`, `ranking`, or `click`, and you can configure the instruction for each of the stages. Note that we do not have an instruction for `ranking` stage since it is executed by the tool without LLMs.
 
 - `instruction`: Instruction given to GII for each of the stages.
+- `log_thinking`: Reasoning models only — opt-in logging of the stage's reasoning-trace *text* into the session log's `thinking` field; `thinking_token` (estimated token count) is always recorded regardless (Default: `False`)
 
 ```python
     stages={

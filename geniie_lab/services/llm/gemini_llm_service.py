@@ -27,8 +27,11 @@ class GeminiLLMService:
         memory: ConversationHistory,
         instruction: Instruction,
         response_model: Type[T],
-    ) -> Tuple[T, int]:
-        """Ask the model to respond to the instruction as a response_model."""
+    ) -> Tuple[T, int, str | None]:
+        """Ask the model to respond to the instruction as a response_model.
+
+        The third element (thinking) is always None: Gemini returns thought
+        summaries only via dedicated response parts we do not request."""
         return self._call_llm_and_parse(
             model.name, model.token_length, model.temperature, model.top_p,
             memory, instruction, response_model,
@@ -43,7 +46,7 @@ class GeminiLLMService:
         memory: ConversationHistory,
         instruction: Instruction,
         response_model: Type[T]
-    ) -> Tuple[T, int]:
+    ) -> Tuple[T, int, str | None]:
 
         memory.add_user_message(instruction.generate())
         openai_messages = memory.get_messages(
@@ -79,7 +82,7 @@ class GeminiLLMService:
         usage = getattr(response, "usage_metadata", None)
         total_token = getattr(usage, "total_token_count", 0) or 0
 
-        return response_model(**data), total_token
+        return response_model(**data), total_token, None
 
     def get_tokenizer(self, model_name: str) -> Callable[[str], int]:
         def count_fn(text: str) -> int:

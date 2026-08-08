@@ -58,12 +58,42 @@ class OpenAICompatibleLLMService:
         memory: ConversationHistory,
         instruction: Instruction,
         response_model: Type[T],
-    ) -> Tuple[T, int]:
-        """Ask the model to respond to the instruction as a response_model."""
+    ) -> Tuple[T, int, str | None]:
+        """Ask the model to respond to the instruction as a response_model.
+
+        Returns (parsed, total_token, thinking): thinking is the model's
+        reasoning trace when the provider exposes one (reasoning models served
+        with a reasoning parser), None otherwise. It is captured for logging
+        only and never fed back into the conversation history.
+        """
         return self._call_llm_with_repair(
             model.name, model.token_length, model.temperature, model.top_p,
             memory, instruction, response_model,
+            thinking_kwargs=self._thinking_kwargs(model),
         )
+
+    @staticmethod
+    def _extract_thinking(message) -> str | None:
+        # vLLM (openai_gptoss/qwen3/nemotron parsers) and Bedrock all expose
+        # the trace as message.reasoning; reasoning_content is the documented
+        # older field name, kept as a fallback. Both absent on non-reasoning
+        # models.
+        return (getattr(message, "reasoning", None)
+                or getattr(message, "reasoning_content", None))
+
+    @staticmethod
+    def _thinking_kwargs(model: ModelDescription) -> dict:
+        # Thinking-length controls, forwarded only when set so providers
+        # without them see an unchanged request:
+        # - thinking_token_budget: server-side cap (vLLM qwen3/deepseek_r1
+        #   parsers); silently ignored elsewhere.
+        # - reasoning_effort: trained-in dial (gpt-oss low/medium/high).
+        extra_body = {}
+        if model.thinking_token_budget is not None:
+            extra_body["thinking_token_budget"] = model.thinking_token_budget
+        if model.reasoning_effort is not None:
+            extra_body["reasoning_effort"] = model.reasoning_effort
+        return {"extra_body": extra_body} if extra_body else {}
 
     def _call_llm_with_repair(
         self,
@@ -73,8 +103,9 @@ class OpenAICompatibleLLMService:
         top_p: float,
         memory: ConversationHistory,
         instruction: Instruction,
-        response_model: Type[T]
-    ) -> Tuple[T, int]:
+        response_model: Type[T],
+        thinking_kwargs: dict = {},
+    ) -> Tuple[T, int, str | None]:
         tokenizer = self.get_tokenizer(model)
 
         # Store only the plain instruction in session memory: with
@@ -121,11 +152,13 @@ class OpenAICompatibleLLMService:
                 response_format=response_format,
                 temperature=temperature,
                 top_p=top_p,
+                **thinking_kwargs,
             )
             usage = getattr(completion, "usage", None)
             call_tokens = getattr(usage, "total_tokens", 0) or 0
             total_token += max(0, call_tokens - schema_tokens)
-            content = completion.choices[0].message.content or ""
+            message = completion.choices[0].message
+            content = message.content or ""
             try:
                 parsed_response, repairs = repair_and_validate(content, response_model)
             except (ValidationError, ValueError) as error:
@@ -145,8 +178,14 @@ class OpenAICompatibleLLMService:
             if repairs:
                 print(f"[json-repair] repaired {response_model.__name__} "
                       f"with rules {repairs}", file=sys.stderr)
-            memory.add_assistant_response(completion.choices[0].message.to_json())
-            return parsed_response, total_token
+            # Store the assistant's content only — not the serialized message
+            # envelope, which on reasoning-parser deployments includes the
+            # full reasoning trace and would silently feed it back (and
+            # re-bill it) on every subsequent call. The stated `reason` field
+            # inside the content is the rationale the session remembers;
+            # thinking stays capture-only.
+            memory.add_assistant_response(message.content or "")
+            return parsed_response, total_token, self._extract_thinking(message)
         raise ValueError(
             f"LLM response failed {response_model.__name__} validation after "
             f"{self.MAX_SCHEMA_RETRIES} attempts: {last_error}"

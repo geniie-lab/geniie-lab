@@ -23,6 +23,12 @@ from geniie_lab.memory import ConversationHistory
 @dataclass
 class StageConfig:
     instruction: Optional[str] = None
+    # Opt-in: when True, the stage's record includes the model's reasoning
+    # trace text (thinking); when False (default) the text is logged as null.
+    # thinking_token (the trace's estimated token count) is always recorded,
+    # so per-stage thinking cost stays measurable. Generation is unaffected —
+    # this only controls what lands in the session log.
+    log_thinking: bool = False
 
 @dataclass
 class ExperimentSettings:
