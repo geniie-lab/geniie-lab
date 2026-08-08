@@ -38,6 +38,10 @@ class ModelDescription:
     # phrase in the server's --reasoning-config for a graceful cut-off).
     # None = uncapped; ignored by providers without the feature.
     thinking_token_budget: Optional[int] = None
+    # Reasoning-effort dial for models trained with one (gpt-oss:
+    # "low" | "medium" | "high"; the model plans its own reasoning length).
+    # None = provider default; ignored by models without the knob.
+    reasoning_effort: Optional[str] = None
 
 @dataclass
 class ToolDescription:

@@ -70,3 +70,25 @@ def test_stage_error_stops_plan_for_topic(patched_services, capsys):
 
     assert records == []  # click errored; query never ran for either topic
     assert patched_services.llm.calls == []
+
+
+def test_log_thinking_opt_in_logs_trace_for_that_stage_only(patched_services, capsys):
+    from geniie_lab.dataclasses.setting import StageConfig
+    from tests.fakes import FAKE_THINKING
+
+    settings = make_settings(
+        name="test_session",
+        plan=["query", "ranking", "click"],
+        stages={"query": StageConfig(log_thinking=True)},  # click stays default False
+    )
+    ExperimentRunner(settings=settings).run()
+    records = parse_jsonl(capsys.readouterr().out)
+
+    query_rec = next(r for r in records if r["stage"] == "query")
+    click_rec = next(r for r in records if r["stage"] == "click")
+    assert query_rec["thinking"] == FAKE_THINKING
+    assert query_rec["thinking_token"] == len(FAKE_THINKING)
+    # Suppression drops only the text; the token count and accounting stay.
+    assert click_rec["thinking"] is None
+    assert click_rec["thinking_token"] == len(FAKE_THINKING)
+    assert click_rec["total_token"] == FAKE_TOTAL_TOKEN

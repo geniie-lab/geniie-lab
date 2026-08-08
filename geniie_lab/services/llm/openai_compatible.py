@@ -63,7 +63,7 @@ class OpenAICompatibleLLMService:
         return call(
             model.name, model.token_length, model.temperature, model.top_p,
             memory, instruction, response_model,
-            thinking_token_budget=model.thinking_token_budget,
+            thinking_kwargs=self._thinking_kwargs(model),
         )
 
     @staticmethod
@@ -76,12 +76,18 @@ class OpenAICompatibleLLMService:
                 or getattr(message, "reasoning_content", None))
 
     @staticmethod
-    def _budget_kwargs(thinking_token_budget: int | None) -> dict:
-        # vLLM enforces the cap server-side (qwen3/deepseek_r1 parsers);
-        # providers that predate the field ignore it silently.
-        if thinking_token_budget is None:
-            return {}
-        return {"extra_body": {"thinking_token_budget": thinking_token_budget}}
+    def _thinking_kwargs(model: ModelDescription) -> dict:
+        # Thinking-length controls, forwarded only when set so providers
+        # without them see an unchanged request:
+        # - thinking_token_budget: server-side cap (vLLM qwen3/deepseek_r1
+        #   parsers); silently ignored elsewhere.
+        # - reasoning_effort: trained-in dial (gpt-oss low/medium/high).
+        extra_body = {}
+        if model.thinking_token_budget is not None:
+            extra_body["thinking_token_budget"] = model.thinking_token_budget
+        if model.reasoning_effort is not None:
+            extra_body["reasoning_effort"] = model.reasoning_effort
+        return {"extra_body": extra_body} if extra_body else {}
 
     def _call_llm_with_pydantic_response(
         self,
@@ -92,7 +98,7 @@ class OpenAICompatibleLLMService:
         memory: ConversationHistory,
         instruction: Instruction,
         response_model: Type[T],
-        thinking_token_budget: int | None = None,
+        thinking_kwargs: dict = {},
     ) -> Tuple[T, int, str | None]:
 
         memory.add_user_message(instruction.generate())
@@ -105,7 +111,7 @@ class OpenAICompatibleLLMService:
             response_format=response_model,
             temperature=temperature,
             top_p=top_p,
-            **self._budget_kwargs(thinking_token_budget),
+            **thinking_kwargs,
         )
         parsed_response = completion.choices[0].message.parsed
         if parsed_response is None:
@@ -126,7 +132,7 @@ class OpenAICompatibleLLMService:
         memory: ConversationHistory,
         instruction: Instruction,
         response_model: Type[T],
-        thinking_token_budget: int | None = None,
+        thinking_kwargs: dict = {},
     ) -> Tuple[T, int, str | None]:
         tokenizer = self.get_tokenizer(model)
         schema_suffix = (
@@ -155,7 +161,7 @@ class OpenAICompatibleLLMService:
                 response_format={"type": "json_object"},
                 temperature=temperature,
                 top_p=top_p,
-                **self._budget_kwargs(thinking_token_budget),
+                **thinking_kwargs,
             )
             usage = getattr(completion, "usage", None)
             call_tokens = getattr(usage, "total_tokens", 0) or 0

@@ -56,6 +56,8 @@ class QueryFormulationStage:
 
         state.query, total_token, thinking = llm_service.generate(model, state.memory, qf_instruction, Query)
         thinking_token = llm_service.get_tokenizer(model.name)(thinking) if thinking else None
+        if not self.config.log_thinking:
+            thinking = None
 
         output = QueryExperimentOutput(
             session_name = settings.name,
@@ -138,6 +140,8 @@ class ClickStage:
 
         state.clicks, total_token, thinking = llm_service.generate(model, state.memory, click_instruction, Clicks)
         thinking_token = llm_service.get_tokenizer(model.name)(thinking) if thinking else None
+        if not self.config.log_thinking:
+            thinking = None
 
         output = ClickExperimentOutput(
             session_name=settings.name,
@@ -198,6 +202,8 @@ class RelevanceJudgementStage:
 
             state.relevance_judgement, total_token, thinking = llm_service.generate(model, state.memory, rj_instruction, RelevanceJudgement)
             thinking_token = llm_service.get_tokenizer(model.name)(thinking) if thinking else None
+            if not self.config.log_thinking:
+                thinking = None
             qrel_label = qrels.get(state.topic.id, click_docid, default=0)
 
             output = RelevanceJudgementExperimentOutput(
@@ -238,6 +244,8 @@ class QueryReFormulationStage:
 
         state.query, total_token, thinking = llm_service.generate(model, state.memory, qrf_instruction, Query)
         thinking_token = llm_service.get_tokenizer(model.name)(thinking) if thinking else None
+        if not self.config.log_thinking:
+            thinking = None
 
         output = QueryReformulationExperimentOutput(
             session_name = settings.name,
