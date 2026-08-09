@@ -73,6 +73,77 @@ class TitleDescriptionNarrativeTopic(BaseTopic):
 class FullTopic(TitleDescriptionNarrativeTopic):
     pass
 
+# Subtopic-bearing topics for diversity/intent tasks (issue #51).
+#
+# Subtopics are the evaluation ground truth of diversity collections; they are
+# NEVER rendered into prompts. __str__ (what stages inject into the LLM
+# context) shows only the searcher-visible fields, with no disclosure option.
+
+@dataclass
+class Subtopic:
+    number: str
+    text: str
+    probability: Optional[float] = None   # NTCIR intent probability
+    intent_type: Optional[str] = None     # NTCIR-10 'nav' / 'inf'
+
+@dataclass
+class SubtopicTopic(BaseTopic):
+    """Base for topics that carry subtopics. Subtopics are held for logging
+    and evaluation only; rendering exposes just the searcher-visible fields."""
+    subtopics: List[Subtopic] = field(default_factory=list)
+
+    def __str__(self):
+        return f"- **Title**: {self.title}"
+
+@dataclass
+class TrecDiversityTopic(SubtopicTopic):
+    """TREC Web Track diversity topic (2009-2012): query text, description,
+    topic type (faceted/ambiguous), and the judged subtopics.
+
+    Rendering is query-only, matching the track protocol: participants were
+    given only the query field; the description (assessor-facing) and the
+    subtopics were released after run submission (TREC 2009 Web Track
+    overview, section 2). Both are kept as data for logging and analysis."""
+    description: Optional[str] = None
+    topic_type: Optional[str] = None
+
+    @classmethod
+    def from_ir_datasets(cls, raw) -> "TrecDiversityTopic":
+        description = getattr(raw, "description", None)
+        return cls(
+            id=raw.query_id,
+            title=" ".join(raw.query.split()),
+            description=" ".join(description.split()) if description else None,
+            topic_type=getattr(raw, "type", None),
+            subtopics=[
+                Subtopic(number=str(getattr(s, "number", i + 1)),
+                         text=" ".join(s.text.split()))
+                for i, s in enumerate(raw.subtopics)
+            ],
+        )
+
+@dataclass
+class NtcirIntentTopic(SubtopicTopic):
+    """NTCIR INTENT-1/2 Japanese Document Ranking topic: the searcher sees the
+    query string alone; intents carry probabilities and (INTENT-2) nav/inf
+    types for evaluation."""
+
+    @classmethod
+    def from_ir_datasets(cls, raw) -> "NtcirIntentTopic":
+        return cls(
+            id=raw.query_id,
+            title=raw.query,
+            subtopics=[
+                Subtopic(
+                    number=str(s.number),
+                    text=getattr(s, "description", ""),
+                    probability=getattr(s, "probability", None),
+                    intent_type=getattr(s, "intent_type", None) or None,
+                )
+                for s in raw.subtopics
+            ],
+        )
+
 T = TypeVar("T", bound=BaseTopic)
 
 @dataclass
