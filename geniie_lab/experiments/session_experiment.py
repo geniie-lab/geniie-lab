@@ -13,6 +13,8 @@ from geniie_lab.dataclasses.topic import (
     TitleDescriptionTopic,
     TitleNarrativeTopic,
     TitleOnlyTopic,
+    TrecDiversityTopic,
+    NtcirIntentTopic,
     TopicList,
     BaseTopic
 )
@@ -293,6 +295,8 @@ class ExperimentRunner:
             TitleNarrativeTopic: TopicList[TitleNarrativeTopic],
             TitleDescriptionNarrativeTopic: TopicList[TitleDescriptionNarrativeTopic],
             FullTopic: TopicList[FullTopic],  # Optional, same as above
+            TrecDiversityTopic: TopicList[TrecDiversityTopic],
+            NtcirIntentTopic: TopicList[NtcirIntentTopic],
         }
 
         self.llm_factory = LLMServiceFactory()
