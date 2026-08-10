@@ -117,7 +117,8 @@ class TrecDiversityTopic(SubtopicTopic):
             topic_type=getattr(raw, "type", None),
             subtopics=[
                 Subtopic(number=str(getattr(s, "number", i + 1)),
-                         text=" ".join(s.text.split()))
+                         text=" ".join(s.text.split()),
+                         intent_type=getattr(s, "type", None) or None)
                 for i, s in enumerate(raw.subtopics)
             ],
         )
@@ -143,6 +144,50 @@ class NtcirIntentTopic(SubtopicTopic):
                 for s in raw.subtopics
             ],
         )
+
+# Subtopic-presenting variants: same data as their parents, but __str__ (the
+# text injected into prompts) includes the subtopic components. Which class
+# an experiment uses is its presentation choice, exactly like the
+# TitleOnly/TitleDescription family above. Selection policies (e.g. showing
+# only the most probable intents) belong to the experiment, which can
+# subclass and filter; these classes present everything they carry.
+
+@dataclass
+class TrecDiversitySubtopicsTopic(TrecDiversityTopic):
+    """TREC diversity topic presenting all available information: title,
+    description, topic type, and the numbered subtopics with their types."""
+
+    def __str__(self):
+        parts = [f"- **Title**: {self.title}"]
+        if self.description:
+            parts.append(f"- **Description**: {self.description}")
+        if self.topic_type:
+            parts.append(f"- **Topic type**: {self.topic_type}")
+        if self.subtopics:
+            parts.append("- **Subtopics**:")
+            for s in self.subtopics:
+                tag = f" ({s.intent_type})" if s.intent_type else ""
+                parts.append(f"  {s.number}.{tag} {s.text}")
+        return "\n".join(parts)
+
+@dataclass
+class NtcirIntentSubtopicsTopic(NtcirIntentTopic):
+    """NTCIR INTENT topic presenting all available information: query and the
+    numbered intents with probabilities and (where present) nav/inf types."""
+
+    def __str__(self):
+        parts = [f"- **Title**: {self.title}"]
+        if self.subtopics:
+            parts.append("- **Subtopics**:")
+            for s in self.subtopics:
+                attrs = []
+                if s.probability is not None:
+                    attrs.append(f"p={s.probability:.3f}")
+                if s.intent_type:
+                    attrs.append(s.intent_type)
+                tag = f" ({', '.join(attrs)})" if attrs else ""
+                parts.append(f"  {s.number}.{tag} {s.text}")
+        return "\n".join(parts)
 
 T = TypeVar("T", bound=BaseTopic)
 

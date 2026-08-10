@@ -113,3 +113,28 @@ class NextActionOutput(DataClassJsonMixin):
     thinking: Optional[str] = None
     thinking_token: Optional[int] = None
     created_at: str = field(default_factory=lambda: datetime.now(UTC).isoformat())
+
+@dataclass_json
+@dataclass
+class SubtopicRelevanceJudgementExperimentOutput(DataClassJsonMixin):
+    """Record of a per-subtopic relevance judgement (diversity/intent tasks):
+    one record per judged document, carrying the grade the model assigned to
+    every listed subtopic alongside the official per-subtopic qrel labels."""
+    session_name: str
+    model: str
+    task: str
+    dataset: str
+    topic_id: str
+    docid: str
+    label: str                                   # derived: Relevant iff any grade >= threshold
+    assessments: List[Dict]                      # [{subtopic, grade, evidence}, ...]
+    subtopic_qrel_labels: Dict[str, int]         # subtopic id -> official label (judged subtopics only)
+    qrel_label: Optional[int] = 0                # topic-level official label (max over subtopics)
+    threshold: Optional[int] = 2
+    repetition: Optional[str] = 1
+    reason: Optional[str] = None
+    stage: Optional[str] = "rel_judge"
+    total_token: Optional[int] = 0
+    thinking: Optional[str] = None
+    thinking_token: Optional[int] = None
+    created_at: str = field(default_factory=lambda: datetime.now(UTC).isoformat())
