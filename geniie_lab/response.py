@@ -122,8 +122,9 @@ class SubtopicGrade(BaseModel):
         "",
         title="evidence",
         description=(
-            "A short quotation from the document supporting a grade above 0. "
-            "Empty string when the grade is 0."
+            "A verbatim quotation copied from the document that supports this "
+            "grade: the quoted text only, with no commentary or explanation "
+            "(put those in the reason field). Empty string when the grade is 0."
         )
     )
 
@@ -135,11 +136,14 @@ class SubtopicRelevanceJudgement(BaseModel):
         title="assessments",
         description=(
             "One entry per subtopic listed in the search topic, in the listed "
-            "order, each with its grade and evidence."
+            "order, each with its grade and supporting quotation."
         )
     )
     reason: str = Field(
         ...,
         title="reason",
-        description="A brief explanation supporting your judgments."
+        description=(
+            "A brief explanation of your judgments across the subtopics: why "
+            "the document does or does not satisfy each of them."
+        )
     )
