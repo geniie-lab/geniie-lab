@@ -128,7 +128,11 @@ class SubtopicRelevanceJudgementExperimentOutput(DataClassJsonMixin):
     docid: str
     label: str                                   # derived: Relevant iff any grade >= threshold
     assessments: List[Dict]                      # [{subtopic, grade, evidence}, ...]
-    subtopic_qrel_labels: Dict[str, int]         # subtopic id -> official label (judged subtopics only)
+    # One entry per subtopic shown to the model: the official grade where the
+    # qrels record one, 0 otherwise. Diversity collections do not record
+    # nonrelevance per subtopic, so absent is nonrelevant (ndeval convention);
+    # listing only graded subtopics would hide every assessor "no" (issue #57).
+    subtopic_qrel_labels: Dict[str, int]
     qrel_label: Optional[int] = 0                # topic-level official label (max over subtopics)
     threshold: Optional[int] = 2
     repetition: Optional[str] = 1

@@ -113,3 +113,24 @@ class TestOutputRecord:
                              relevance_threshold=2)
         assert config.response_model is SubtopicRelevanceJudgement
         assert config.relevance_threshold == 2
+
+
+class TestSubtopicQrelLabels:
+    """Every presented subtopic gets a label; absent means nonrelevant (#57)."""
+
+    @staticmethod
+    def build(graded, presented):
+        # mirrors the stage: graded rows from the qrels, one entry per subtopic
+        return {str(s): graded.get(str(s), 0) for s in presented}
+
+    def test_absent_subtopics_are_zero_not_missing(self):
+        labels = self.build({"2": 1}, presented=[1, 2, 3])
+        assert labels == {"1": 0, "2": 1, "3": 0}
+
+    def test_document_relevant_to_nothing_is_all_zero(self):
+        labels = self.build({"0": 0}, presented=[1, 2])
+        assert labels == {"1": 0, "2": 0}
+
+    def test_every_presented_subtopic_is_covered(self):
+        presented = [1, 2, 3, 4, 5]
+        assert set(self.build({"3": 2}, presented)) == {"1", "2", "3", "4", "5"}
