@@ -24,34 +24,28 @@ from geniie_lab.dataclasses.description import (
 from geniie_lab.dataclasses.topic import TrecDiversitySubtopicsTopic
 from geniie_lab.dataclasses.setting import ExperimentSettings, StageConfig
 from geniie_lab.experiments.session_experiment import ExperimentRunner
-from geniie_lab.response import (
-    GradedRelevance,
-    RubricRelevance,
-    SubtopicRelevanceJudgement,
-)
+from geniie_lab.response import RubricRelevance, SubtopicRelevanceJudgement
 
 load_dotenv()
 
-# The rubric the relevance instruction below defines. Swap the scale and the
-# anchor text together: the schema constrains what the model may emit, the
-# instruction says what each value means, and nothing checks that they agree.
+# The anchors that give the RubricRelevance labels their meaning. Swap the
+# scale and this text together: the schema constrains what the model may emit,
+# the instruction says what each label means, and nothing checks they agree.
+#
+# The last sentence is collection-specific — it restates what NIST told its
+# TREC 2009 assessors. Another collection needs whatever its own track told
+# its assessors, and another language in place of English.
+#
+# Note there is no sentence about quoting evidence: that requirement lives in
+# the `evidence` field description, and duplicating it here is not needed.
 RUBRIC_INSTRUCTION = """
-    Judge the document against every subtopic listed in the search topic,
-    in the order listed, using exactly one of these labels:
-    - NotAddressed: the document does not address this subtopic.
-    - OnSubtopicOnly: related to this subtopic but does not satisfy the need it expresses.
-    - NeedSatisfied: satisfies the need expressed by this subtopic.
-    - CompletelySatisfied: dedicated to this subtopic and satisfies it completely.
-"""
-
-# The graded alternative, for GradedRelevance.
-GRADED_INSTRUCTION = """
-    Judge the document against every subtopic listed in the search topic,
-    in the order listed, using exactly one of these labels:
-    - NotRelevant: the document is not relevant to this subtopic.
-    - PartiallyRelevant: relevant to this subtopic but only in part.
-    - Relevant: relevant to this subtopic.
-    - HighlyRelevant: highly relevant to this subtopic.
+    Evaluate the relevance of the document based on each subtopic of the search topic, one at a time and independently.
+    For every subtopic, assign a label:
+    NotAddressed - the document does not address this subtopic.
+    OnSubtopicOnly - related to this subtopic, but does not satisfy the need it expresses.
+    NeedSatisfied - satisfies the need expressed by this subtopic.
+    CompletelySatisfied - is dedicated to this subtopic and satisfies it completely.
+    Label NotAddressed for every subtopic if the document is not in English, or if its content is misleading or malicious.
 """
 
 my_settings = ExperimentSettings(
@@ -60,7 +54,7 @@ my_settings = ExperimentSettings(
     name="my_subtopic_experiment_rubric",
     task=TaskDescription(
         name="High-Diversity Retrieval",
-        description="Find a diverse set of relevant documents for a given search topic from a given document collection using a provided search tool.",
+        description="Find as many different relevant documents as possible for each of the listed subtopics of the search topic from a given document collection using a provided search tool.",
         measurement=[ir_measures.alpha_nDCG@20],
         start_offset=0,
         serp_size=20,
@@ -108,19 +102,24 @@ my_settings = ExperimentSettings(
             instruction=""
         ),
         "click": StageConfig(
+            # The visited sentence assumes mark_visited_results is on (it is,
+            # by default) — drop it when marking is off, since it would
+            # describe something that never appears. The ranking-numbers
+            # sentence is a crash guard: without it a model may click rank 0
+            # and the runner abandons the topic.
             instruction="""
-                Select a set of documents that are likely to contain relevant information to the search topic. Return an empty list if none of the results appears relevant.
+                Select a set of documents that are likely to contain relevant information to any subtopics of the search topic. Results you have already opened earlier in this session are marked visited=True. Refer to documents by the ranking numbers shown in the results, which start at 1. Return an empty list if none of the results appears relevant.
             """,
         ),
         "relevance": StageConfig(
+            # Swapping to GradedRelevance means writing the anchors for its
+            # four labels here; the label names alone do not define them.
             response_model=SubtopicRelevanceJudgement[RubricRelevance],
             instruction=RUBRIC_INSTRUCTION,
-            # response_model=SubtopicRelevanceJudgement[GradedRelevance],
-            # instruction=GRADED_INSTRUCTION,
         ),
         "reformulate": StageConfig(
             instruction="""
-                Formulate another search query to find new relevant documents.
+                Formulate another search query to find new relevant documents to any subtopics of the search topic.
             """,
         ),
     },
