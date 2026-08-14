@@ -4,7 +4,9 @@ The fake LLM always clicks rank 1 (d1), so a plan with two search iterations
 gives each topic one unmarked SERP and one where d1 should carry the marker.
 """
 from geniie_lab.dataclasses.serp import SearchResultItem
+from geniie_lab.experiments.agentic_experiment import ExperimentRunner as AgenticRunner
 from geniie_lab.experiments.session_experiment import ExperimentRunner
+from geniie_lab.response import Action
 
 from tests.conftest import make_settings
 
@@ -69,3 +71,18 @@ def test_flag_off_leaves_the_prompt_byte_identical(patched_services):
     first, second = click_prompts(patched_services.llm, topic_index=0)
     assert "visited" not in second
     assert first == second  # same SERP, and nothing marks it
+
+
+def test_agentic_marks_a_reused_serp_without_a_new_ranking(patched_services):
+    # CLICK_DOCUMENT runs no ranking stage, so the second click renders the
+    # SERP object built for the first one. The marks must still be there.
+    patched_services.llm.next_actions = [Action.CLICK_DOCUMENT, Action.END_TASK]
+    settings = make_settings(name="test_agentic", max_actions=10,
+                             mark_visited_results=True)
+    AgenticRunner(settings=settings).run()
+
+    prompts = [text for kind, text in patched_services.llm.prompts
+               if kind == "ClickInstruction"]
+    first, second = prompts[0], prompts[1]
+    assert "visited=True" not in first
+    assert "docid='d1', title='Doc One', snippet='about topic one', visited=True" in second

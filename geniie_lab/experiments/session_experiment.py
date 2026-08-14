@@ -92,11 +92,6 @@ class RankingStage:
         state.serp = opensearch_client.search_index_with_snippets(query_text, start=start_offset, size=settings.task.serp_size)
         state.docids = [item.docid for item in state.serp.results] if state.serp and state.serp.results else []
 
-        if settings.mark_visited_results and state.serp and state.serp.results:
-            for item in state.serp.results:
-                if item.docid in state.visited_docids:
-                    item.visited = True
-
         dataset = ir_datasets.load(settings.topicset.name)
         if callable(dataset):
             dataset = dataset()
@@ -142,6 +137,14 @@ class ClickStage:
             return state
 
         print("\n--- Running: Click Stage ---", file=sys.stderr)
+        # Marked here rather than when the SERP is built: the same SERP can be
+        # rendered more than once, and each rendering must show the clicks made
+        # since the last one.
+        if settings.mark_visited_results:
+            for item in state.serp.results:
+                if item.docid in state.visited_docids:
+                    item.visited = True
+
         instruction_text = self.config.instruction or self.DEFAULT_INSTRUCTION
         click_instruction = ClickInstruction(instruction=instruction_text, serp=state.serp)
 
