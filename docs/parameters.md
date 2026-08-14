@@ -32,7 +32,7 @@ The following parameters can be configured via `ExperimentSettings` in the runne
 |Tool|All|`port`|9200|Port number of opensearch client|
 |Tool|All|`use_ssl`|True|Whether to connect to opensearch over SSL (Default: `True`)|
 |Tool|All|`description`|It allows you to perform searches using keywords only and employs the BM25 ranking model to order results.|Description of the tool, query syntax (if any), and ranking model.|
-|Stage|All|`instruction`|Review the provided descriptions of task, corpus, tool and search topic. Then, formulate a search query.|Instruction given to the LLM for each of the stages.|
+|Stage|All|`instruction`|Review the provided descriptions of task, corpus, tool and search topic. Then, formulate a search query.|Instruction given to GII for each of the stages.|
 |Stage|All|`log_thinking`|True|Reasoning models only: opt-in logging of the stage's reasoning-trace *text* into the session log's `thinking` field. `thinking_token` (the trace's estimated token count) is always recorded regardless, so per-stage thinking cost stays measurable (Default: `False`)|
 |Other|Session, Repetition|`plan`|\["query", "ranking", "click", "relevance", "reformulate", "ranking"\]|A series of search stages to be executed as a single session.|
 |Other|Repetition|`loop_num_per_topic`|2|Number of repetition for the last stage (Default: 1)|
@@ -41,4 +41,4 @@ The following parameters can be configured via `ExperimentSettings` in the runne
 |Other|All|`topic_ids`|1:10|Range of topic positions to run, as `start:end` (1-based, inclusive). Useful to resume an experiment from a particular topic. `None` means all topics (Default: `None`)|
 |Other|All|`full_log`|False|Toggle the outputs of full interaction log with LLMs.|
 |Other|All|`custom_settings`|None|Arbitrary strings to note for an experiment (e.g., specific parameter settings)|
-|Other|Session|`mark_visited_results`|True|Mark search results the LLM already opened in this session with `visited=True`, like a browser's visited links. Set to `False` to reproduce runs made before this existed (Default: `True`)|
+|Other|Session|`mark_visited_results`|True|Mark search results GII already opened in this session with `visited=True`, like a browser's visited links. Set to `False` to reproduce runs made before this existed (Default: `True`)|

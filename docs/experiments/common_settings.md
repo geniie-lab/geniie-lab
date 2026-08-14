@@ -152,9 +152,9 @@ See [Getting Started - OpenSearch](../getting_started/opensearch.md) to learn ho
 
 Each stage has a name such as `query`, `ranking`, or `click`, and you can configure the instruction for each of the stages. Note that we do not have an instruction for `ranking` stage since it is executed by the tool without LLMs.
 
-- `instruction`: Instruction given to the LLM for each of the stages.
+- `instruction`: Instruction given to GII for each of the stages.
 - `log_thinking`: Reasoning models only — opt-in logging of the stage's reasoning-trace *text* into the session log's `thinking` field; `thinking_token` (estimated token count) is always recorded regardless (Default: `False`)
-- `response_model`: Structured-output schema override for the stage. Currently honoured by the `relevance` stage, where it switches the LLM from a single label per document to one label per subtopic. See [Per-subtopic relevance judgement](../advanced/subtopic_judgement.md) (Default: `None`, meaning the stage's own schema)
+- `response_model`: Structured-output schema override for the stage. Currently honoured by the `relevance` stage, where it switches GII from a single label per document to one label per subtopic. See [Per-subtopic relevance judgement](../advanced/subtopic_judgement.md) (Default: `None`, meaning the stage's own schema)
 
 ```python
     stages={
@@ -189,8 +189,8 @@ Each stage has a name such as `query`, `ranking`, or `click`, and you can config
 - `max_topics`: Define how many topics in the dataset to be processed in the experiment. If you set to 1, it will execute the first topic (or questions or query) in the dataset. If you set to `None`, the experiment will be run on all topics. Default: `None`
 - `topic_ids`: Define subset of topics in a slice manner. For example, `topic_ids="2:5"` will use from the 2nd to 5th topics in the dataset. Default: `None`
 - `full_log`: Define whether or not a full interaction log with LLMs is produced at the end of each topic. Useful for debugging purpose. Make sure to catch STDERR to save the full log. Default: `False`. Alternatively, you can set the log level to `DEBUG` in the logger defined at the beginning of the runner scripts in `scripts` folder.
-- `custom_settings`: A variable to store any arbitary strings to note for an experiment (e.g., specific parameter settings). It will be included in the outputs but not to present to the LLM. Default: `None`
-- `mark_visited_results`: Define whether the search results shown to the LLM indicate the documents it has already opened earlier in the same session, in the way a web browser colours visited links. When `True`, such a result is rendered with `visited=True`; results not yet opened are rendered exactly as before, so only the visited ones carry a cue. Visits are recorded at click time and reset between topics. Set to `False` to reproduce runs made before this setting existed, since it changes what the LLM sees. Default: `True`
+- `custom_settings`: A variable to store any arbitary strings to note for an experiment (e.g., specific parameter settings). It will be included in the outputs but not to present to GII. Default: `None`
+- `mark_visited_results`: Define whether the search results shown to GII indicate the documents it has already opened earlier in the same session, in the way a web browser colours visited links. When `True`, such a result is rendered with `visited=True`; results not yet opened are rendered exactly as before, so only the visited ones carry a cue. Visits are recorded at click time and reset between topics. Set to `False` to reproduce runs made before this setting existed, since it changes what GII sees. Default: `True`
 
 ```python
     max_topics=1,

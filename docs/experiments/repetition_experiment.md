@@ -1,6 +1,6 @@
 # Repetition Experiment
 
-In the repetition experiment, researchers can examine the consistency (replicability) of LLM responses at a stage in a session. For example, when a session is configured as `plan=["query"]`, then, the query formulation will be executed $N$ times, while when a session is `plan=["query", "ranking", "click"]`, the clicking stage will be repeated $N$ times. All the previous stages are executed only once.
+In the repetition experiment, researchers can examine the consistency (replicability) of GII responses at a stage in a session. For example, when a session is configured as `plan=["query"]`, then, the query formulation will be executed $N$ times, while when a session is `plan=["query", "ranking", "click"]`, the clicking stage will be repeated $N$ times. All the previous stages are executed only once.
 
 See [Common Settings](common_settings.md) and [Session Experiment](session_experiment.md) first to learn the overall experimental settings and how to use `plan`.
 
