@@ -84,7 +84,11 @@ Two things to know when reading these records.
 
 `qrel_labels` has an entry for **every** presented subtopic, using 0 where the qrels record nothing. These collections record nonrelevance per document rather than per subtopic, so listing only the graded rows would hide every assessor "no" and make agreement look perfect by construction.
 
-The record does **not** say which scale produced the labels, and it carries no document-level label — deciding that, say, a document counts as relevant when at least one subtopic reaches `NeedSatisfied` is an analysis choice, not something frozen at collection time. Recording the scale in `custom_settings` keeps a run self-describing.
+The record does **not** say which scale produced the labels, so when reading older logs, check the run's configuration rather than assuming. Today the label values happen to tell the scales apart, since none of the values coincide, but that is a property of the current vocabularies and not something to rely on.
+
+The cheapest fix is to name the scale in `name` (the experiment name), which is logged as `session_name` on every row — no extra field, no lookup. `custom_settings` works too if the name is already carrying its own meaning.
+
+The record also carries no document-level label. Deciding that, say, a document counts as relevant when at least one subtopic reaches `NeedSatisfied` is an analysis choice, not something to freeze at collection time.
 
 ## Example
 

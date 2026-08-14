@@ -55,7 +55,9 @@ GRADED_INSTRUCTION = """
 """
 
 my_settings = ExperimentSettings(
-    name="my_subtopic_experiment",
+    # The output does not record which label scale ran, so name it here: the
+    # experiment name is logged as session_name on every row.
+    name="my_subtopic_experiment_rubric",
     task=TaskDescription(
         name="High-Diversity Retrieval",
         description="Find a diverse set of relevant documents for a given search topic from a given document collection using a provided search tool.",
@@ -125,9 +127,6 @@ my_settings = ExperimentSettings(
     },
     plan=["query", "ranking", "click", "relevance", "reformulate", "ranking"],
     max_topics=1,
-    # The scale is not recorded in the output; note it here so the run is
-    # self-describing.
-    custom_settings="label scale: RubricRelevance",
     full_log=False
 )
 
