@@ -234,27 +234,19 @@ class RelevanceJudgementStage:
             qrel_label = qrels.get(state.topic.id, click_docid, default=0)
 
             if isinstance(state.relevance_judgement, SubtopicRelevanceJudgement):
-                # Per-subtopic judgement: the classic binary label is derived
-                # as Relevant iff any subtopic grade reaches the threshold.
-                threshold = self.config.relevance_threshold
-                relevant = any(a.grade >= threshold for a in state.relevance_judgement.assessments)
-                # One entry per subtopic the model was shown. Diversity
-                # collections do not record nonrelevance per subtopic: TREC
-                # 2009 marks a document that satisfies nothing with a single
-                # `subtopic 0, relevance 0` row, and NTCIR INTENT lists only
-                # graded intents. Reporting just the rows that exist therefore
-                # hides every assessor "no", and a consumer comparing agent
-                # grades against this field measures precision as 1.0 by
-                # construction (issue #57). Absent means nonrelevant, the
-                # standard ndeval convention, so absent is recorded as 0.
+                # One entry per subtopic the model was shown. Absent from the
+                # qrels means nonrelevant (ndeval convention): these
+                # collections record nonrelevance per document, not per
+                # subtopic, so listing only the graded rows would hide every
+                # assessor "no" (issue #57).
                 graded = {}
                 for row in dataset.qrels_iter():
                     if row.query_id == state.topic.id and row.doc_id == click_docid:
                         subtopic = str(getattr(row, "subtopic_id", None) or getattr(row, "iteration", "0"))
                         graded[subtopic] = max(graded.get(subtopic, row.relevance), row.relevance)
-                subtopic_qrel_labels = {
+                qrel_labels = {
                     str(a.subtopic): graded.get(str(a.subtopic), 0)
-                    for a in state.relevance_judgement.assessments
+                    for a in state.relevance_judgement.labels
                 }
                 output = SubtopicRelevanceJudgementExperimentOutput(
                     session_name = settings.name,
@@ -263,11 +255,8 @@ class RelevanceJudgementStage:
                     dataset = settings.topicset.name,
                     topic_id = state.topic.id,
                     docid = click_docid,
-                    label = "Relevance.RELEVANT" if relevant else "Relevance.NOT_RELEVANT",
-                    assessments = [a.model_dump() for a in state.relevance_judgement.assessments],
-                    subtopic_qrel_labels = subtopic_qrel_labels,
-                    qrel_label = max(graded.values(), default=0),
-                    threshold = threshold,
+                    labels = [a.model_dump(mode="json") for a in state.relevance_judgement.labels],
+                    qrel_labels = qrel_labels,
                     reason = getattr(state.relevance_judgement, "reason", None),
                     total_token = total_token,
                     thinking = thinking,

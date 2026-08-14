@@ -32,10 +32,8 @@ class StageConfig:
     # Optional structured-output schema override for the stage. Currently
     # honoured by the relevance stage: set to SubtopicRelevanceJudgement for
     # per-subtopic grading on diversity/intent topics (the document is judged
-    # against every subtopic in one call; the classic binary label is derived
-    # as Relevant iff any grade >= relevance_threshold).
+    # against every subtopic in one call).
     response_model: Optional[type] = None
-    relevance_threshold: int = 2
 
 @dataclass
 class ExperimentSettings:

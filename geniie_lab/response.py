@@ -9,6 +9,21 @@ class Relevance(str, Enum):
     RELEVANT = "Relevant"
     NOT_RELEVANT = "NotRelevant"
 
+class RubricRelevance(str, Enum):
+    """What happened to the information need a subtopic expresses."""
+    NOT_ADDRESSED = "NotAddressed"
+    ON_SUBTOPIC_ONLY = "OnSubtopicOnly"
+    NEED_SATISFIED = "NeedSatisfied"
+    COMPLETELY_SATISFIED = "CompletelySatisfied"
+
+# Rubric order, ascending. Use for "at least NEED_SATISFIED" comparisons.
+RUBRIC_ORDER = (
+    RubricRelevance.NOT_ADDRESSED,
+    RubricRelevance.ON_SUBTOPIC_ONLY,
+    RubricRelevance.NEED_SATISFIED,
+    RubricRelevance.COMPLETELY_SATISFIED,
+)
+
 class Action(Enum):
     """Enum describing possible user actions."""
     SUBMIT_NEW_QUERY = "SUBMIT_NEW_QUERY"
@@ -99,51 +114,42 @@ class NextAction(BaseModel):
         description="A brief explanation for choosing this action."
     )
 
-class SubtopicGrade(BaseModel):
-    """One subtopic's relevance grade for a single document."""
+class SubtopicRelevance(BaseModel):
+    """One subtopic's relevance label for a single document."""
     subtopic: int = Field(
         ...,
         title="subtopic",
         description="The number of the subtopic as listed in the search topic."
     )
-    grade: int = Field(
+    label: RubricRelevance = Field(
         ...,
-        ge=0,
-        le=3,
-        title="grade",
-        description=(
-            "0: the document does not address this subtopic. "
-            "1: related to this subtopic but does not satisfy the need it expresses. "
-            "2: satisfies the need expressed by this subtopic. "
-            "3: dedicated to this subtopic and satisfies it completely."
-        )
+        title="label",
+        description="The relevance label for this subtopic, as defined in the instruction."
     )
     evidence: str = Field(
         "",
         title="evidence",
         description=(
             "A verbatim quotation copied from the document that supports this "
-            "grade: the quoted text only, with no commentary or explanation "
-            "(put those in the reason field). Empty string when the grade is 0."
+            "label: the quoted text only, with no commentary or explanation "
+            "(put those in the reason field). Empty string when the label is "
+            "NotAddressed."
         )
     )
 
 class SubtopicRelevanceJudgement(BaseModel):
-    """A model for grading a document against every subtopic of the search
+    """A model for labelling a document against every subtopic of the search
     topic, one entry per listed subtopic."""
-    assessments: List[SubtopicGrade] = Field(
+    labels: List[SubtopicRelevance] = Field(
         ...,
-        title="assessments",
+        title="labels",
         description=(
             "One entry per subtopic listed in the search topic, in the listed "
-            "order, each with its grade and supporting quotation."
+            "order, each with its label and supporting quotation."
         )
     )
     reason: str = Field(
         ...,
         title="reason",
-        description=(
-            "A brief explanation of your judgments across the subtopics: why "
-            "the document does or does not satisfy each of them."
-        )
+        description="A brief explanation supporting your judgment."
     )

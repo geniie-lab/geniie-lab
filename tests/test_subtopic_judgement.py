@@ -1,5 +1,5 @@
 """Tests for per-subtopic relevance judgement (subtopic-presenting topics,
-SubtopicRelevanceJudgement schema, and the derived binary label)."""
+the SubtopicRelevanceJudgement schema, and the recorded output)."""
 
 import pytest
 from pydantic import ValidationError
@@ -11,7 +11,12 @@ from geniie_lab.dataclasses.topic import (
     Subtopic,
     TrecDiversitySubtopicsTopic,
 )
-from geniie_lab.response import SubtopicGrade, SubtopicRelevanceJudgement
+from geniie_lab.response import (
+    RUBRIC_ORDER,
+    RubricRelevance,
+    SubtopicRelevance,
+    SubtopicRelevanceJudgement,
+)
 
 
 def make_trec_topic():
@@ -56,63 +61,56 @@ class TestSubtopicPresentingTopics:
         assert str(parent) == "- **Title**: defender"
 
 
+class TestRubricRelevance:
+    def test_values_are_what_the_model_emits(self):
+        assert RubricRelevance.NOT_ADDRESSED == "NotAddressed"
+        assert RubricRelevance.COMPLETELY_SATISFIED == "CompletelySatisfied"
+
+    def test_rubric_order_supports_at_least_comparisons(self):
+        satisfied = RUBRIC_ORDER.index(RubricRelevance.NEED_SATISFIED)
+        assert RUBRIC_ORDER.index(RubricRelevance.ON_SUBTOPIC_ONLY) < satisfied
+        assert RUBRIC_ORDER.index(RubricRelevance.COMPLETELY_SATISFIED) > satisfied
+        assert len(RUBRIC_ORDER) == len(RubricRelevance)
+
+
 class TestSubtopicRelevanceJudgementSchema:
-    def test_grade_bounds_enforced(self):
+    def test_label_must_be_a_rubric_value(self):
         with pytest.raises(ValidationError):
-            SubtopicGrade(subtopic=1, grade=4, evidence="x")
+            SubtopicRelevance(subtopic=1, label="VeryRelevant", evidence="x")
         with pytest.raises(ValidationError):
-            SubtopicGrade(subtopic=1, grade=-1, evidence="x")
+            SubtopicRelevance(subtopic=1, label=2, evidence="x")
 
     def test_evidence_defaults_empty(self):
-        assert SubtopicGrade(subtopic=1, grade=0).evidence == ""
+        item = SubtopicRelevance(subtopic=1, label=RubricRelevance.NOT_ADDRESSED)
+        assert item.evidence == ""
 
     def test_reason_required(self):
         with pytest.raises(ValidationError):
-            SubtopicRelevanceJudgement(assessments=[])
-
-
-class TestDerivedLabel:
-    @staticmethod
-    def derive(grades, threshold=2):
-        judgement = SubtopicRelevanceJudgement(
-            assessments=[SubtopicGrade(subtopic=i + 1, grade=g, evidence="e" if g else "")
-                         for i, g in enumerate(grades)],
-            reason="r",
-        )
-        return any(a.grade >= threshold for a in judgement.assessments)
-
-    def test_all_zeros_is_not_relevant(self):
-        assert self.derive([0, 0, 0]) is False
-
-    def test_grade_one_is_not_relevant(self):
-        assert self.derive([1, 1, 0]) is False
-
-    def test_any_grade_two_is_relevant(self):
-        assert self.derive([0, 2, 0]) is True
-
-    def test_threshold_is_configurable(self):
-        assert self.derive([1, 1, 1], threshold=1) is True
-        assert self.derive([2, 2, 2], threshold=3) is False
+            SubtopicRelevanceJudgement(labels=[])
 
 
 class TestOutputRecord:
     def test_round_trips_to_json(self):
         record = SubtopicRelevanceJudgementExperimentOutput(
             session_name="s", model="m", task="t", dataset="d",
-            topic_id="20", docid="doc-1", label="Relevance.RELEVANT",
-            assessments=[{"subtopic": 1, "grade": 2, "evidence": "quote"}],
-            subtopic_qrel_labels={"1": 1, "2": 0},
-            qrel_label=1, threshold=2, reason="because",
+            topic_id="20", docid="doc-1",
+            labels=[{"subtopic": 1, "label": "NeedSatisfied", "evidence": "quote"}],
+            qrel_labels={"1": 1, "2": 0},
+            reason="because",
         )
         blob = record.to_json()
-        assert '"assessments"' in blob and '"subtopic_qrel_labels"' in blob
+        assert '"labels"' in blob and '"qrel_labels"' in blob
         assert record.stage == "rel_judge"
 
-    def test_stageconfig_carries_model_and_threshold(self):
-        config = StageConfig(response_model=SubtopicRelevanceJudgement,
-                             relevance_threshold=2)
+    def test_record_carries_no_derived_document_label(self):
+        # Per-subtopic labels are recorded; document relevance is analysis.
+        fields = SubtopicRelevanceJudgementExperimentOutput.__dataclass_fields__
+        assert "label" not in fields and "threshold" not in fields
+        assert "qrel_label" not in fields
+
+    def test_stageconfig_carries_response_model(self):
+        config = StageConfig(response_model=SubtopicRelevanceJudgement)
         assert config.response_model is SubtopicRelevanceJudgement
-        assert config.relevance_threshold == 2
 
 
 class TestSubtopicQrelLabels:
