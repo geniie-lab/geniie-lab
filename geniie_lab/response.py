@@ -1,7 +1,7 @@
 from enum import Enum
 from typing import Generic, List, TypeVar
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 # Enums
 class Relevance(str, Enum):
@@ -124,7 +124,19 @@ class NextAction(BaseModel):
         description="A brief explanation for choosing this action."
     )
 
-class SubtopicRelevance(BaseModel, Generic[Label]):
+class RequiresLabelScale(BaseModel, Generic[Label]):
+    """Base for models that must be parametrised with a label scale."""
+
+    @model_validator(mode="before")
+    @classmethod
+    def _require_label_scale(cls, data):
+        if cls.__pydantic_generic_metadata__["parameters"]:
+            raise ValueError(
+                f"specify a label scale, e.g. {cls.__name__}[RubricRelevance]"
+            )
+        return data
+
+class SubtopicRelevance(RequiresLabelScale[Label]):
     """One subtopic's relevance label for a single document.
 
     Parametrised by the label scale, so the experiment chooses it:
@@ -151,7 +163,7 @@ class SubtopicRelevance(BaseModel, Generic[Label]):
         )
     )
 
-class SubtopicRelevanceJudgement(BaseModel, Generic[Label]):
+class SubtopicRelevanceJudgement(RequiresLabelScale[Label]):
     """A model for labelling a document against every subtopic of the search
     topic, one entry per listed subtopic."""
     labels: List[SubtopicRelevance[Label]] = Field(

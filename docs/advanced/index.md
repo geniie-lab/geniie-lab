@@ -4,6 +4,8 @@ Although the [parameters](../parameters.md) in `ExperimentalSettings` allow rese
 
 See also: [Invalid JSON handling policy](json_handling.md) — how malformed structured outputs are repaired, retried, and, as a last resort, skipped per topic.
 
+See also: [Per-subtopic relevance judgement](subtopic_judgement.md) — labelling a document against every subtopic of a diversity or intent topic, and choosing the label scale.
+
 ## Responses
 If you would like to change the format of GII reponses, edit `geniie-lab/response.py`, where structured outputs are defined for LLMs. You can add/remove fields using pydantic format.
 

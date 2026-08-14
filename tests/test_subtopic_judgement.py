@@ -158,3 +158,11 @@ class TestSubtopicQrelLabels:
     def test_every_presented_subtopic_is_covered(self):
         presented = [1, 2, 3, 4, 5]
         assert set(self.build({"3": 2}, presented)) == {"1", "2", "3", "4", "5"}
+
+
+class TestLabelScaleIsRequired:
+    def test_bare_model_explains_how_to_parametrise(self):
+        with pytest.raises(ValidationError, match="specify a label scale"):
+            SubtopicRelevanceJudgement(labels=[], reason="r")
+        with pytest.raises(ValidationError, match="specify a label scale"):
+            SubtopicRelevance(subtopic=1, label="NeedSatisfied")
