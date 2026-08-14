@@ -67,17 +67,16 @@ my_settings = ExperimentSettings(
     ),
     topicset=TopicDescription(
         # A subtopic-presenting topic class is required: the parent classes
-        # (TrecDiversityTopic, NtcirIntentTopic) render the query alone, so
-        # the model would be asked to label subtopics it was never shown.
-        name="clueweb09/catb/trec-web-2009/diversity",
+        # render the query alone, so the model would be asked to label
+        # subtopics it was never shown.
+        name="<dataset whose queries carry subtopics>",
         type="ir_datasets",
         topic_class=TrecDiversitySubtopicsTopic,
-        # topic_class=NtcirIntentSubtopicsTopic,  # for NTCIR INTENT topics
     ),
     corpus=CorpusDescription(
-        name="ClueWeb09 Category B",
-        description="A web collection of about 50M English pages crawled in 2009, used by the TREC Web Track diversity task.",
-        index_name="clueweb09_catb_bm25",
+        name="<corpus name>",
+        description="<corpus description>",
+        index_name="<index name>",
     ),
     models=[
         ModelDescription(
@@ -93,7 +92,7 @@ my_settings = ExperimentSettings(
         ToolDescription(
             name="opensearch",
             ranking_model="bm25",
-            index_name="clueweb09_catb_bm25",
+            index_name="<index name>",
             host="localhost",
             port=9200,
             description="It allows you to perform searches using keywords only and employs the BM25 ranking model to order results.",

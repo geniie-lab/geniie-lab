@@ -1,6 +1,6 @@
 # Session Experiment
 
-In the session experiment, researchers can examine the GII response of four search stages such as querying, clicking, relevance judgement, and query reformulation. A session can be configured as simple as a single stage of `{query}` to as complex as six (or more) sequence of stages like `{query, ranking, clicking, relevance judgement, reformulating, ranking}`.
+In the session experiment, researchers can examine the LLM response of four search stages such as querying, clicking, relevance judgement, and query reformulation. A session can be configured as simple as a single stage of `{query}` to as complex as six (or more) sequence of stages like `{query, ranking, clicking, relevance judgement, reformulating, ranking}`.
 
 See [Common Settings](common_settings.md) first to learn the overall experimental settings.
 

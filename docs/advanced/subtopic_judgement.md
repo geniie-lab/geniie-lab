@@ -1,25 +1,25 @@
 # Per-subtopic relevance judgement
 
-By default the relevance stage asks GII for one label per document. For diversity and intent collections, where a topic is a set of subtopics, you can instead ask for one label *per subtopic*: GII reads the document once and labels it against every subtopic in a single call.
+By default the relevance stage asks the LLM for one label per document. For diversity and intent collections, where a topic is a set of subtopics, you can instead ask for one label *per subtopic*: the LLM reads the document once and labels it against every subtopic in a single call.
 
 Two settings are needed, and they must agree with each other.
 
-## 1. Present the subtopics to GII
+## 1. Present the subtopics to the LLM
 
-The topic class controls what GII sees. The parent classes render the query alone, matching the original track protocols in which participants never saw the subtopics:
+The topic class controls what the LLM sees. The parent classes render the query alone, matching the original track protocols in which participants never saw the subtopics:
 
-| Topic class | What GII sees |
+| Topic class | What the LLM sees |
 |---|---|
 | `TrecDiversityTopic` | query only |
 | `TrecDiversitySubtopicsTopic` | title, description, topic type, numbered subtopics |
 | `NtcirIntentTopic` | query only |
 | `NtcirIntentSubtopicsTopic` | query, numbered intents with probabilities and types |
 
-Use one of the `...SubtopicsTopic` classes. Pairing a parent class with a per-subtopic response model asks GII to label subtopics it was never shown.
+Use one of the `...SubtopicsTopic` classes. Pairing a parent class with a per-subtopic response model asks the LLM to label subtopics it was never shown.
 
 ```python
     topicset=TopicDescription(
-        name="clueweb09/catb/trec-web-2009/diversity",
+        name="<dataset whose queries carry subtopics>",
         type="ir_datasets",
         topic_class=TrecDiversitySubtopicsTopic,
     ),
@@ -27,7 +27,7 @@ Use one of the `...SubtopicsTopic` classes. Pairing a parent class with a per-su
 
 ## 2. Choose the label scale
 
-Set `response_model` on the `relevance` stage to `SubtopicRelevanceJudgement[scale]`, where the scale is an enum of the labels GII may emit:
+Set `response_model` on the `relevance` stage to `SubtopicRelevanceJudgement[scale]`, where the scale is an enum of the labels the LLM may emit:
 
 | Scale | Labels |
 |---|---|
@@ -35,7 +35,7 @@ Set `response_model` on the `relevance` stage to `SubtopicRelevanceJudgement[sca
 | `GradedRelevance` | `NotRelevant`, `PartiallyRelevant`, `Relevant`, `HighlyRelevant` |
 | `Relevance` | `Relevant`, `NotRelevant` |
 
-The two four-point scales are not interchangeable, and the choice changes what GII reports. `GradedRelevance` is a graded relevance scale: it asks how relevant the document is to the subtopic. `RubricRelevance` is a rubric over what happened to the information need the subtopic expresses — whether the document merely touches the subject or actually satisfies the need. A document can be highly relevant to a subtopic while satisfying none of it.
+The two four-point scales are not interchangeable, and the choice changes what the LLM reports. `GradedRelevance` is a graded relevance scale: it asks how relevant the document is to the subtopic. `RubricRelevance` is a rubric over what happened to the information need the subtopic expresses — whether the document merely touches the subject or actually satisfies the need. A document can be highly relevant to a subtopic while satisfying none of it.
 
 ```python
 from geniie_lab.response import RubricRelevance, SubtopicRelevanceJudgement
@@ -57,7 +57,7 @@ The scale must be given explicitly: a bare `SubtopicRelevanceJudgement` raises `
 
 The anchor wording belongs in the instruction, as above: the enum values alone name the levels but do not define them.
 
-**The schema and the instruction are not cross-checked.** The scale constrains what GII may emit; the instruction says what each label means. If you change one, change the other.
+**The schema and the instruction are not cross-checked.** The scale constrains what the LLM may emit; the instruction says what each label means. If you change one, change the other.
 
 `RubricRelevance` and `GradedRelevance` are ordered scales: each label has a `.rank` giving its position, so analysis code can ask for "at least `NeedSatisfied`" without hard-coding the list.
 

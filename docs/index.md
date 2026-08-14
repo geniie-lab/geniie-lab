@@ -8,9 +8,9 @@ Welcome to the geniie-lab documentation!
 
 ## Types of experiment
 
-- [Session Experiment](experiments/session_experiment.md): researchers can examine the GII response of four search stages such as querying, clicking, relevance judgement, and query reformulation.
-- [Repetition Experiment](experiments/repetition_experiment.md): researchers can examine the consistency (replicability) of GII responses at a stage in a session.
-- [Agentic Experiment](experiments/agentic_experiment.md): researchers can examine the GII response for the decision-making of search stages.
+- [Session Experiment](experiments/session_experiment.md): researchers can examine the LLM response of four search stages such as querying, clicking, relevance judgement, and query reformulation.
+- [Repetition Experiment](experiments/repetition_experiment.md): researchers can examine the consistency (replicability) of LLM responses at a stage in a session.
+- [Agentic Experiment](experiments/agentic_experiment.md): researchers can examine the LLM response for the decision-making of search stages.
 
 
 ## Prerequisites

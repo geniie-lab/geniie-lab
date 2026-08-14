@@ -7,7 +7,7 @@ See also: [Invalid JSON handling policy](json_handling.md) — how malformed str
 See also: [Per-subtopic relevance judgement](subtopic_judgement.md) — labelling a document against every subtopic of a diversity or intent topic, and choosing the label scale.
 
 ## Responses
-If you would like to change the format of GII reponses, edit `geniie-lab/response.py`, where structured outputs are defined for LLMs. You can add/remove fields using pydantic format.
+If you would like to change the format of LLM reponses, edit `geniie-lab/response.py`, where structured outputs are defined for LLMs. You can add/remove fields using pydantic format.
 
 ```
 class Clicks(BaseModel):

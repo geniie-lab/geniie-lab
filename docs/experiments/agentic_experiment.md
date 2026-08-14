@@ -1,13 +1,13 @@
 # Agentic Experiment
 
-In the agentic experiment, researchers can examine the GII response for the decision-making of search stages. For example, after the initial set of search stages, `{query, ranking, clicking, relevance judgement}`, the GII is asked for the next action such as query reformulation, next serp page, more clicks, or end the task. The experiment continue unitl either `max_actions` or GII's decision of task termination.
+In the agentic experiment, researchers can examine the LLM response for the decision-making of search stages. For example, after the initial set of search stages, `{query, ranking, clicking, relevance judgement}`, the LLM is asked for the next action such as query reformulation, next serp page, more clicks, or end the task. The experiment continue unitl either `max_actions` or the LLM's decision of task termination.
 
 See [Common Settings](common_settings.md) and [Session Experiment](session_experiment.md) first to learn the overall experimental settings, while we do not use `plan` in this experiment.
 
 
 ## Next Action stage
 
-Since we let GII to decide the next action, a new stage is added. The sequence of search stages is defined in `ExperimentRunner` class of `geniie-lab/experiments/agentic_experiemnt.py`. See [Advanced Topics](../advanced/index.md) to learn how to configure these sequences.
+Since we let the LLM decide the next action, a new stage is added. The sequence of search stages is defined in `ExperimentRunner` class of `geniie-lab/experiments/agentic_experiemnt.py`. See [Advanced Topics](../advanced/index.md) to learn how to configure these sequences.
 
 - `Submit_New_Query`: The next action will be a sequence of `query`, `ranking`, `click`, `relevance`, and `next_action`
 - `Click_Document`: The next action will be a sequence of `click` (on the same SERP), `relevance`, and `next_action`
@@ -34,7 +34,7 @@ Since we let GII to decide the next action, a new stage is added. The sequence o
 
 Furthermore, we need to set `max_action` in the agentic experiment.
 
-- `max_action`: The maximu number of actions to be taken before termination. Note that GII might choose `End_Task` option from the `next_action` stage before `max_action` reaches. Default: `None`
+- `max_action`: The maximu number of actions to be taken before termination. Note that the LLM might choose `End_Task` option from the `next_action` stage before `max_action` reaches. Default: `None`
 
 ## Sample output
 
