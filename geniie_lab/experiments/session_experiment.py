@@ -14,7 +14,9 @@ from geniie_lab.dataclasses.topic import (
     TitleNarrativeTopic,
     TitleOnlyTopic,
     TrecDiversityTopic,
+    TrecDiversitySubtopicsTopic,
     NtcirIntentTopic,
+    NtcirIntentSubtopicsTopic,
     TopicList,
     BaseTopic
 )
@@ -30,9 +32,10 @@ from geniie_lab.dataclasses.output import (
     QueryReformulationExperimentOutput,
     RankingExperimentOutput,
     RelevanceJudgementExperimentOutput,
+    SubtopicRelevanceJudgementExperimentOutput,
 )
 from geniie_lab.memory import ConversationHistory
-from geniie_lab.response import Clicks, Query, RelevanceJudgement
+from geniie_lab.response import Clicks, Query, RelevanceJudgement, SubtopicRelevanceJudgement
 from geniie_lab.services.llm.llm_service_factory import LLMServiceFactory
 from geniie_lab.services.llm.llm_service_protocol import LLMServiceProtocol
 from geniie_lab.services.measure_service import MeasureService, Qrels, Run
@@ -222,26 +225,68 @@ class RelevanceJudgementStage:
             instruction_text = self.config.instruction or self.DEFAULT_INSTRUCTION
             rj_instruction = RelevanceJudgementInstruction(instruction=instruction_text, fulltext=state.fulltext)
 
-            state.relevance_judgement, total_token, thinking = llm_service.generate(model, state.memory, rj_instruction, RelevanceJudgement)
+            response_model = self.config.response_model or RelevanceJudgement
+            state.relevance_judgement, total_token, thinking = llm_service.generate(model, state.memory, rj_instruction, response_model)
             thinking_token = llm_service.get_tokenizer(model.name)(thinking) if thinking else None
             if not self.config.log_thinking:
                 thinking = None
 
             qrel_label = qrels.get(state.topic.id, click_docid, default=0)
 
-            output = RelevanceJudgementExperimentOutput(
-                session_name = settings.name,
-                model = model.name,
-                task = settings.task.name,
-                dataset = settings.topicset.name,
-                topic_id = state.topic.id,
-                docid = click_docid,
-                label = f"{state.relevance_judgement.label}",
-                qrel_label=qrel_label,
-                total_token = total_token,
-                thinking = thinking,
-                thinking_token = thinking_token
-            )
+            if isinstance(state.relevance_judgement, SubtopicRelevanceJudgement):
+                # Per-subtopic judgement: the classic binary label is derived
+                # as Relevant iff any subtopic grade reaches the threshold.
+                threshold = self.config.relevance_threshold
+                relevant = any(a.grade >= threshold for a in state.relevance_judgement.assessments)
+                # One entry per subtopic the model was shown. Diversity
+                # collections do not record nonrelevance per subtopic: TREC
+                # 2009 marks a document that satisfies nothing with a single
+                # `subtopic 0, relevance 0` row, and NTCIR INTENT lists only
+                # graded intents. Reporting just the rows that exist therefore
+                # hides every assessor "no", and a consumer comparing agent
+                # grades against this field measures precision as 1.0 by
+                # construction (issue #57). Absent means nonrelevant, the
+                # standard ndeval convention, so absent is recorded as 0.
+                graded = {}
+                for row in dataset.qrels_iter():
+                    if row.query_id == state.topic.id and row.doc_id == click_docid:
+                        subtopic = str(getattr(row, "subtopic_id", None) or getattr(row, "iteration", "0"))
+                        graded[subtopic] = max(graded.get(subtopic, row.relevance), row.relevance)
+                subtopic_qrel_labels = {
+                    str(a.subtopic): graded.get(str(a.subtopic), 0)
+                    for a in state.relevance_judgement.assessments
+                }
+                output = SubtopicRelevanceJudgementExperimentOutput(
+                    session_name = settings.name,
+                    model = model.name,
+                    task = settings.task.name,
+                    dataset = settings.topicset.name,
+                    topic_id = state.topic.id,
+                    docid = click_docid,
+                    label = "Relevance.RELEVANT" if relevant else "Relevance.NOT_RELEVANT",
+                    assessments = [a.model_dump() for a in state.relevance_judgement.assessments],
+                    subtopic_qrel_labels = subtopic_qrel_labels,
+                    qrel_label = max(graded.values(), default=0),
+                    threshold = threshold,
+                    reason = getattr(state.relevance_judgement, "reason", None),
+                    total_token = total_token,
+                    thinking = thinking,
+                    thinking_token = thinking_token
+                )
+            else:
+                output = RelevanceJudgementExperimentOutput(
+                    session_name = settings.name,
+                    model = model.name,
+                    task = settings.task.name,
+                    dataset = settings.topicset.name,
+                    topic_id = state.topic.id,
+                    docid = click_docid,
+                    label = f"{state.relevance_judgement.label}",
+                    qrel_label=qrel_label,
+                    total_token = total_token,
+                    thinking = thinking,
+                    thinking_token = thinking_token
+                )
             print(output.to_json(ensure_ascii=False), flush=True)
 
         return state
@@ -310,7 +355,9 @@ class ExperimentRunner:
             TitleDescriptionNarrativeTopic: TopicList[TitleDescriptionNarrativeTopic],
             FullTopic: TopicList[FullTopic],  # Optional, same as above
             TrecDiversityTopic: TopicList[TrecDiversityTopic],
+            TrecDiversitySubtopicsTopic: TopicList[TrecDiversitySubtopicsTopic],
             NtcirIntentTopic: TopicList[NtcirIntentTopic],
+            NtcirIntentSubtopicsTopic: TopicList[NtcirIntentSubtopicsTopic],
         }
 
         self.llm_factory = LLMServiceFactory()

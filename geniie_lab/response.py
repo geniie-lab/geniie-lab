@@ -98,3 +98,52 @@ class NextAction(BaseModel):
         title="reason",
         description="A brief explanation for choosing this action."
     )
+
+class SubtopicGrade(BaseModel):
+    """One subtopic's relevance grade for a single document."""
+    subtopic: int = Field(
+        ...,
+        title="subtopic",
+        description="The number of the subtopic as listed in the search topic."
+    )
+    grade: int = Field(
+        ...,
+        ge=0,
+        le=3,
+        title="grade",
+        description=(
+            "0: the document does not address this subtopic. "
+            "1: related to this subtopic but does not satisfy the need it expresses. "
+            "2: satisfies the need expressed by this subtopic. "
+            "3: dedicated to this subtopic and satisfies it completely."
+        )
+    )
+    evidence: str = Field(
+        "",
+        title="evidence",
+        description=(
+            "A verbatim quotation copied from the document that supports this "
+            "grade: the quoted text only, with no commentary or explanation "
+            "(put those in the reason field). Empty string when the grade is 0."
+        )
+    )
+
+class SubtopicRelevanceJudgement(BaseModel):
+    """A model for grading a document against every subtopic of the search
+    topic, one entry per listed subtopic."""
+    assessments: List[SubtopicGrade] = Field(
+        ...,
+        title="assessments",
+        description=(
+            "One entry per subtopic listed in the search topic, in the listed "
+            "order, each with its grade and supporting quotation."
+        )
+    )
+    reason: str = Field(
+        ...,
+        title="reason",
+        description=(
+            "A brief explanation of your judgments across the subtopics: why "
+            "the document does or does not satisfy each of them."
+        )
+    )
