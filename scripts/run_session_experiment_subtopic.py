@@ -21,17 +21,6 @@ from geniie_lab.response import RubricRelevance, SubtopicRelevanceJudgement
 
 load_dotenv()
 
-# The last sentence is collection-specific (TREC 2009 assessor guidance).
-RUBRIC_INSTRUCTION = """
-    Evaluate the relevance of the document based on each subtopic of the search topic, one at a time and independently.
-    For every subtopic, assign a label:
-    NotAddressed - the document does not address this subtopic.
-    OnSubtopicOnly - related to this subtopic, but does not satisfy the need it expresses.
-    NeedSatisfied - satisfies the need expressed by this subtopic.
-    CompletelySatisfied - is dedicated to this subtopic and satisfies it completely.
-    Label NotAddressed for every subtopic if the document is not in English, or if its content is misleading or malicious.
-"""
-
 my_settings = ExperimentSettings(
     # The output does not record the label scale; the name is logged instead.
     name="my_subtopic_experiment_rubric",
@@ -90,8 +79,17 @@ my_settings = ExperimentSettings(
         ),
         "relevance": StageConfig(
             # Another scale needs its own anchors written into the instruction.
+            # The last sentence is collection-specific (TREC 2009 guidance).
             response_model=SubtopicRelevanceJudgement[RubricRelevance],
-            instruction=RUBRIC_INSTRUCTION,
+            instruction="""
+                Evaluate the relevance of the document based on each subtopic of the search topic, one at a time and independently.
+                For every subtopic, assign a label:
+                NotAddressed - the document does not address this subtopic.
+                OnSubtopicOnly - related to this subtopic, but does not satisfy the need it expresses.
+                NeedSatisfied - satisfies the need expressed by this subtopic.
+                CompletelySatisfied - is dedicated to this subtopic and satisfies it completely.
+                Label NotAddressed for every subtopic if the document is not in English, or if its content is misleading or malicious.
+            """,
         ),
         "reformulate": StageConfig(
             instruction="""
