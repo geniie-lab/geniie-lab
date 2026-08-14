@@ -118,7 +118,7 @@ class NextActionOutput(DataClassJsonMixin):
 @dataclass
 class SubtopicRelevanceJudgementExperimentOutput(DataClassJsonMixin):
     """Record of a per-subtopic relevance judgement (diversity/intent tasks):
-    one record per judged document, carrying the grade the model assigned to
+    one record per judged document, carrying the label the model assigned to
     every listed subtopic alongside the official per-subtopic qrel labels."""
     session_name: str
     model: str
@@ -126,15 +126,11 @@ class SubtopicRelevanceJudgementExperimentOutput(DataClassJsonMixin):
     dataset: str
     topic_id: str
     docid: str
-    label: str                                   # derived: Relevant iff any grade >= threshold
-    assessments: List[Dict]                      # [{subtopic, grade, evidence}, ...]
-    # One entry per subtopic shown to the model: the official grade where the
-    # qrels record one, 0 otherwise. Diversity collections do not record
-    # nonrelevance per subtopic, so absent is nonrelevant (ndeval convention);
-    # listing only graded subtopics would hide every assessor "no" (issue #57).
-    subtopic_qrel_labels: Dict[str, int]
-    qrel_label: Optional[int] = 0                # topic-level official label (max over subtopics)
-    threshold: Optional[int] = 2
+    labels: List[Dict]                           # [{subtopic, label, evidence}, ...]
+    # One entry per subtopic shown to the model. Absent from the qrels means
+    # nonrelevant (ndeval convention): these collections record nonrelevance
+    # per document, not per subtopic (issue #57).
+    qrel_labels: Dict[str, int]
     repetition: Optional[str] = 1
     reason: Optional[str] = None
     stage: Optional[str] = "rel_judge"
