@@ -37,7 +37,8 @@ class StubClient:
         self.chat = SimpleNamespace(completions=SimpleNamespace(create=create))
 
 
-def _service_call(stub, thinking_token_budget=None, reasoning_effort=None, **service_kwargs):
+def _service_call(stub, thinking_token_budget=None, reasoning_effort=None,
+                  response_model=Query, **service_kwargs):
     service = OpenAICompatibleLLMService(client=stub, tiktoken_by_model=False, **service_kwargs)
     memory = ConversationHistory(system_role=None, system_prompt="be helpful")
     memory.add_user_message("earlier user turn")
@@ -47,7 +48,7 @@ def _service_call(stub, thinking_token_budget=None, reasoning_effort=None, **ser
                              temperature=0.0, top_p=1.0,
                              thinking_token_budget=thinking_token_budget,
                              reasoning_effort=reasoning_effort)
-    return service.generate(model, memory, instruction, Query), memory
+    return service.generate(model, memory, instruction, response_model), memory
 
 
 def test_call_preserves_roles_and_updates_memory():
@@ -79,6 +80,21 @@ def test_call_preserves_roles_and_updates_memory():
     assert history[-2]["role"] == "user"
     assert "reformulate" in history[-2]["content"]
     assert history[-1] == {"role": "assistant", "content": VALID_QUERY_JSON}
+
+
+def test_parametrised_generic_gets_a_provider_safe_schema_name():
+    # A parametrised model's __name__ carries brackets, which providers reject
+    # for the json_schema name (^[a-zA-Z0-9_-]+$).
+    from geniie_lab.response import RubricRelevance, SubtopicRelevanceJudgement
+
+    model = SubtopicRelevanceJudgement[RubricRelevance]
+    stub = StubClient('{"labels": [{"subtopic": 1, "label": "NeedSatisfied", '
+                      '"evidence": "q"}], "reason": "r"}')
+    _service_call(stub, response_model=model)
+
+    assert "[" in model.__name__
+    assert stub.calls[0]["response_format"]["json_schema"]["name"] == \
+        "SubtopicRelevanceJudgement_RubricRelevance_"
 
 
 def test_memory_never_contains_the_thinking_trace():

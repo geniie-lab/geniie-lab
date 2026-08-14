@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import List
+from typing import Generic, List, TypeVar
 
 from pydantic import BaseModel, Field
 
@@ -9,20 +9,30 @@ class Relevance(str, Enum):
     RELEVANT = "Relevant"
     NOT_RELEVANT = "NotRelevant"
 
-class RubricRelevance(str, Enum):
+class OrderedLabels(str, Enum):
+    """A label scale declared least to most relevant."""
+
+    @property
+    def rank(self) -> int:
+        """Position on the scale, for "at least" comparisons."""
+        return list(type(self)).index(self)
+
+class RubricRelevance(OrderedLabels):
     """What happened to the information need a subtopic expresses."""
     NOT_ADDRESSED = "NotAddressed"
     ON_SUBTOPIC_ONLY = "OnSubtopicOnly"
     NEED_SATISFIED = "NeedSatisfied"
     COMPLETELY_SATISFIED = "CompletelySatisfied"
 
-# Rubric order, ascending. Use for "at least NEED_SATISFIED" comparisons.
-RUBRIC_ORDER = (
-    RubricRelevance.NOT_ADDRESSED,
-    RubricRelevance.ON_SUBTOPIC_ONLY,
-    RubricRelevance.NEED_SATISFIED,
-    RubricRelevance.COMPLETELY_SATISFIED,
-)
+class GradedRelevance(OrderedLabels):
+    """Classic graded relevance."""
+    NOT_RELEVANT = "NotRelevant"
+    PARTIALLY_RELEVANT = "PartiallyRelevant"
+    RELEVANT = "Relevant"
+    HIGHLY_RELEVANT = "HighlyRelevant"
+
+# The label scale a subtopic judgement is parametrised by.
+Label = TypeVar("Label", bound=Enum)
 
 class Action(Enum):
     """Enum describing possible user actions."""
@@ -114,14 +124,18 @@ class NextAction(BaseModel):
         description="A brief explanation for choosing this action."
     )
 
-class SubtopicRelevance(BaseModel):
-    """One subtopic's relevance label for a single document."""
+class SubtopicRelevance(BaseModel, Generic[Label]):
+    """One subtopic's relevance label for a single document.
+
+    Parametrised by the label scale, so the experiment chooses it:
+    SubtopicRelevance[RubricRelevance], [GradedRelevance] or [Relevance].
+    """
     subtopic: int = Field(
         ...,
         title="subtopic",
         description="The number of the subtopic as listed in the search topic."
     )
-    label: RubricRelevance = Field(
+    label: Label = Field(
         ...,
         title="label",
         description="The relevance label for this subtopic, as defined in the instruction."
@@ -137,10 +151,10 @@ class SubtopicRelevance(BaseModel):
         )
     )
 
-class SubtopicRelevanceJudgement(BaseModel):
+class SubtopicRelevanceJudgement(BaseModel, Generic[Label]):
     """A model for labelling a document against every subtopic of the search
     topic, one entry per listed subtopic."""
-    labels: List[SubtopicRelevance] = Field(
+    labels: List[SubtopicRelevance[Label]] = Field(
         ...,
         title="labels",
         description=(

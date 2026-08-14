@@ -1,5 +1,6 @@
 # Standard library
 import json
+import re
 import sys
 from typing import Callable, Tuple, Type, TypeVar
 
@@ -137,7 +138,10 @@ class OpenAICompatibleLLMService:
             response_format = {
                 "type": "json_schema",
                 "json_schema": {
-                    "name": response_model.__name__,
+                    # Providers require ^[a-zA-Z0-9_-]+$; a parametrised
+                    # generic's __name__ carries brackets, e.g.
+                    # SubtopicRelevanceJudgement[RubricRelevance].
+                    "name": re.sub(r"[^a-zA-Z0-9_-]", "_", response_model.__name__),
                     "schema": response_model.model_json_schema(),
                     "strict": True,
                 },
