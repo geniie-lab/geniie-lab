@@ -30,9 +30,10 @@ class StageConfig:
     # this only controls what lands in the session log.
     log_thinking: bool = False
     # Optional structured-output schema override for the stage. Currently
-    # honoured by the relevance stage: set to SubtopicRelevanceJudgement for
-    # per-subtopic grading on diversity/intent topics (the document is judged
-    # against every subtopic in one call).
+    # honoured by the relevance stage: set to SubtopicRelevanceJudgement[scale]
+    # for per-subtopic labelling on diversity/intent topics (the document is
+    # judged against every subtopic in one call). The scale must match the
+    # labels the stage instruction defines.
     response_model: Optional[type] = None
 
 @dataclass

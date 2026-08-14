@@ -12,11 +12,15 @@ from geniie_lab.dataclasses.topic import (
     TrecDiversitySubtopicsTopic,
 )
 from geniie_lab.response import (
-    RUBRIC_ORDER,
+    GradedRelevance,
+    Relevance,
     RubricRelevance,
     SubtopicRelevance,
     SubtopicRelevanceJudgement,
 )
+
+RubricJudgement = SubtopicRelevanceJudgement[RubricRelevance]
+GradedJudgement = SubtopicRelevanceJudgement[GradedRelevance]
 
 
 def make_trec_topic():
@@ -61,32 +65,54 @@ class TestSubtopicPresentingTopics:
         assert str(parent) == "- **Title**: defender"
 
 
-class TestRubricRelevance:
+class TestLabelScales:
     def test_values_are_what_the_model_emits(self):
         assert RubricRelevance.NOT_ADDRESSED == "NotAddressed"
         assert RubricRelevance.COMPLETELY_SATISFIED == "CompletelySatisfied"
+        assert GradedRelevance.PARTIALLY_RELEVANT == "PartiallyRelevant"
+        assert GradedRelevance.HIGHLY_RELEVANT == "HighlyRelevant"
 
-    def test_rubric_order_supports_at_least_comparisons(self):
-        satisfied = RUBRIC_ORDER.index(RubricRelevance.NEED_SATISFIED)
-        assert RUBRIC_ORDER.index(RubricRelevance.ON_SUBTOPIC_ONLY) < satisfied
-        assert RUBRIC_ORDER.index(RubricRelevance.COMPLETELY_SATISFIED) > satisfied
-        assert len(RUBRIC_ORDER) == len(RubricRelevance)
+    def test_rank_supports_at_least_comparisons(self):
+        assert RubricRelevance.ON_SUBTOPIC_ONLY.rank < RubricRelevance.NEED_SATISFIED.rank
+        assert RubricRelevance.COMPLETELY_SATISFIED.rank > RubricRelevance.NEED_SATISFIED.rank
+        assert GradedRelevance.NOT_RELEVANT.rank == 0
+        assert GradedRelevance.HIGHLY_RELEVANT.rank == len(GradedRelevance) - 1
 
 
 class TestSubtopicRelevanceJudgementSchema:
-    def test_label_must_be_a_rubric_value(self):
+    def test_label_must_belong_to_the_chosen_scale(self):
         with pytest.raises(ValidationError):
-            SubtopicRelevance(subtopic=1, label="VeryRelevant", evidence="x")
+            SubtopicRelevance[RubricRelevance](subtopic=1, label="VeryRelevant", evidence="x")
         with pytest.raises(ValidationError):
-            SubtopicRelevance(subtopic=1, label=2, evidence="x")
+            SubtopicRelevance[RubricRelevance](subtopic=1, label=2, evidence="x")
+
+    def test_scales_do_not_accept_each_others_values(self):
+        with pytest.raises(ValidationError):
+            GradedJudgement(labels=[{"subtopic": 1, "label": "NeedSatisfied"}], reason="r")
+        with pytest.raises(ValidationError):
+            RubricJudgement(labels=[{"subtopic": 1, "label": "HighlyRelevant"}], reason="r")
+
+    def test_binary_relevance_is_a_usable_scale(self):
+        # Relevance predates the ordered scales and stays usable as a label.
+        judgement = SubtopicRelevanceJudgement[Relevance](
+            labels=[{"subtopic": 1, "label": "Relevant", "evidence": "q"}], reason="r")
+        assert judgement.labels[0].label is Relevance.RELEVANT
 
     def test_evidence_defaults_empty(self):
-        item = SubtopicRelevance(subtopic=1, label=RubricRelevance.NOT_ADDRESSED)
+        item = SubtopicRelevance[RubricRelevance](
+            subtopic=1, label=RubricRelevance.NOT_ADDRESSED)
         assert item.evidence == ""
 
     def test_reason_required(self):
         with pytest.raises(ValidationError):
-            SubtopicRelevanceJudgement(labels=[])
+            RubricJudgement(labels=[])
+
+    def test_stage_dispatch_sees_the_generic_base(self):
+        # session_experiment branches on isinstance against the unparametrised
+        # base; parametrised instances must still match.
+        judgement = RubricJudgement(
+            labels=[{"subtopic": 1, "label": "NeedSatisfied", "evidence": "q"}], reason="r")
+        assert isinstance(judgement, SubtopicRelevanceJudgement)
 
 
 class TestOutputRecord:
@@ -109,8 +135,8 @@ class TestOutputRecord:
         assert "qrel_label" not in fields
 
     def test_stageconfig_carries_response_model(self):
-        config = StageConfig(response_model=SubtopicRelevanceJudgement)
-        assert config.response_model is SubtopicRelevanceJudgement
+        config = StageConfig(response_model=RubricJudgement)
+        assert config.response_model is RubricJudgement
 
 
 class TestSubtopicQrelLabels:
@@ -132,3 +158,11 @@ class TestSubtopicQrelLabels:
     def test_every_presented_subtopic_is_covered(self):
         presented = [1, 2, 3, 4, 5]
         assert set(self.build({"3": 2}, presented)) == {"1", "2", "3", "4", "5"}
+
+
+class TestLabelScaleIsRequired:
+    def test_bare_model_explains_how_to_parametrise(self):
+        with pytest.raises(ValidationError, match="specify a label scale"):
+            SubtopicRelevanceJudgement(labels=[], reason="r")
+        with pytest.raises(ValidationError, match="specify a label scale"):
+            SubtopicRelevance(subtopic=1, label="NeedSatisfied")

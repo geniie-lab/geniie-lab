@@ -154,6 +154,7 @@ Each stage has a name such as `query`, `ranking`, or `click`, and you can config
 
 - `instruction`: Instruction given to GII for each of the stages.
 - `log_thinking`: Reasoning models only — opt-in logging of the stage's reasoning-trace *text* into the session log's `thinking` field; `thinking_token` (estimated token count) is always recorded regardless (Default: `False`)
+- `response_model`: Structured-output schema override for the stage. Currently honoured by the `relevance` stage, where it switches GII from a single label per document to one label per subtopic. See [Per-subtopic relevance judgement](../advanced/subtopic_judgement.md) (Default: `None`, meaning the stage's own schema)
 
 ```python
     stages={
