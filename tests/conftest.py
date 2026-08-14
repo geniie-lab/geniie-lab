@@ -51,7 +51,8 @@ def patched_services(monkeypatch, fake_llm, fake_search, fake_dataset):
 
 
 def make_settings(name="test_experiment", plan=None, loop_num_per_topic=1,
-                  max_actions=None, stages=None) -> ExperimentSettings:
+                  max_actions=None, stages=None,
+                  mark_visited_results=True) -> ExperimentSettings:
     return ExperimentSettings(
         name=name,
         task=TaskDescription(
@@ -86,4 +87,5 @@ def make_settings(name="test_experiment", plan=None, loop_num_per_topic=1,
         plan=plan,
         loop_num_per_topic=loop_num_per_topic,
         max_actions=max_actions,
+        mark_visited_results=mark_visited_results,
     )
