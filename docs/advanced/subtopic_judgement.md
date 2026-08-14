@@ -25,8 +25,6 @@ Use one of the `...SubtopicsTopic` classes. Pairing a parent class with a per-su
     ),
 ```
 
-The dataset must be one whose queries carry subtopics. For the TREC Web Track those are the `diversity` variants, `clueweb09/catb/trec-web-{2009,2010,2011,2012}/diversity` (or `clueweb09/en/...` for Category A) — the plain ad-hoc variants have no subtopics to present. NTCIR INTENT topics (`ntcir9-intent1-ja`, `ntcir10-intent2-ja`) are local `ir_datasets` registrations that live in geniie-backend; import the registration module before running.
-
 ## 2. Choose the label scale
 
 Set `response_model` on the `relevance` stage to `SubtopicRelevanceJudgement[scale]`, where the scale is an enum of the labels GII may emit:
