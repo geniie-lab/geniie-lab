@@ -189,10 +189,12 @@ Each stage has a name such as `query`, `ranking`, or `click`, and you can config
 - `topic_ids`: Define subset of topics in a slice manner. For example, `topic_ids="2:5"` will use from the 2nd to 5th topics in the dataset. Default: `None`
 - `full_log`: Define whether or not a full interaction log with LLMs is produced at the end of each topic. Useful for debugging purpose. Make sure to catch STDERR to save the full log. Default: `False`. Alternatively, you can set the log level to `DEBUG` in the logger defined at the beginning of the runner scripts in `scripts` folder.
 - `custom_settings`: A variable to store any arbitary strings to note for an experiment (e.g., specific parameter settings). It will be included in the outputs but not to present to GII. Default: `None`
+- `mark_visited_results`: Define whether the search results shown to GII indicate the documents it has already opened earlier in the same session, in the way a web browser colours visited links. When `True`, such a result is rendered with `visited=True`; results not yet opened are rendered exactly as before, so only the visited ones carry a cue. Visits are recorded at click time and reset between topics. Set to `False` to reproduce runs made before this setting existed, since it changes what GII sees. Default: `True`
 
 ```python
     max_topics=1,
     topic_ids="2:5",
     full_log=False,
-    custom_settings=None
+    custom_settings=None,
+    mark_visited_results=True
 ```

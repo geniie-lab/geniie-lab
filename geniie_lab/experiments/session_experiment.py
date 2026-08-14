@@ -140,6 +140,14 @@ class ClickStage:
             return state
 
         print("\n--- Running: Click Stage ---", file=sys.stderr)
+        # Marked here rather than when the SERP is built: the same SERP can be
+        # rendered more than once, and each rendering must show the clicks made
+        # since the last one.
+        if settings.mark_visited_results:
+            for item in state.serp.results:
+                if item.docid in state.visited_docids:
+                    item.visited = True
+
         instruction_text = self.config.instruction or self.DEFAULT_INSTRUCTION
         click_instruction = ClickInstruction(instruction=instruction_text, serp=state.serp)
 
@@ -147,6 +155,12 @@ class ClickStage:
         thinking_token = llm_service.get_tokenizer(model.name)(thinking) if thinking else None
         if not self.config.log_thinking:
             thinking = None
+
+        # Marked at click time, not read time: out-of-range indices are left
+        # for the judgement stage, which already reports them as an error.
+        for click_index in state.clicks.ranking_list:
+            if 1 <= click_index <= len(state.serp.results):
+                state.visited_docids.add(state.serp.results[click_index - 1].docid)
 
         output = ClickExperimentOutput(
             session_name=settings.name,

@@ -62,6 +62,9 @@ class FakeLLMService:
     def __init__(self, next_actions: List[Action] | None = None):
         self.calls: list[tuple[str, int]] = []
         self.next_actions: list[Action] = list(next_actions or [])
+        # Instructions as the model saw them, for tests that assert on the
+        # rendered prompt text rather than on the emitted records.
+        self.prompts: list[tuple[str, str]] = []
 
     def _canned_response(self, instruction, response_model):
         if response_model is Query:
@@ -80,6 +83,7 @@ class FakeLLMService:
     def generate(self, model, memory, instruction, response_model):
         self.calls.append((response_model.__name__, len(memory._history)))
         response = self._canned_response(instruction, response_model)
+        self.prompts.append((type(instruction).__name__, instruction.generate()))
         memory.add_user_message(instruction.generate())
         memory.add_assistant_response(response.model_dump_json())
         return response, FAKE_TOTAL_TOKEN, FAKE_THINKING

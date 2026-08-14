@@ -41,3 +41,4 @@ The following parameters can be configured via `ExperimentSettings` in the runne
 |Other|All|`topic_ids`|1:10|Range of topic positions to run, as `start:end` (1-based, inclusive). Useful to resume an experiment from a particular topic. `None` means all topics (Default: `None`)|
 |Other|All|`full_log`|False|Toggle the outputs of full interaction log with LLMs.|
 |Other|All|`custom_settings`|None|Arbitrary strings to note for an experiment (e.g., specific parameter settings)|
+|Other|Session|`mark_visited_results`|True|Mark search results GII already opened in this session with `visited=True`, like a browser's visited links. Set to `False` to reproduce runs made before this existed (Default: `True`)|
