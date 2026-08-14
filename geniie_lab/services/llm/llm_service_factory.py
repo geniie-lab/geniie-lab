@@ -48,9 +48,11 @@ _REGISTRY: Dict[str, Callable[[], LLMServiceProtocol]] = {
         api_key=os.getenv("BEDROCK_API_KEY"),
         tiktoken_by_model=False,  # Bedrock model IDs are unknown to tiktoken
         # Bedrock's json_schema grammar for gpt-oss loops on whitespace
-        # (strict) or leaks stray prefix tokens (non-strict); see
-        # OpenAICompatibleLLMService.schema_via_prompt.
-        schema_via_prompt=True,
+        # (strict) or leaks stray prefix tokens (non-strict), so it falls back
+        # to json_object. That leaves no grammar, so the prompt must carry the
+        # schema: the two settings go together here.
+        json_object_fallback=True,
+        schema_in_prompt=True,
     ),
     "gemini": GeminiLLMService,
 }

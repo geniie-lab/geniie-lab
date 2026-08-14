@@ -42,16 +42,22 @@ class OpenAICompatibleLLMService:
         api_key: str | None = None,
         client: OpenAI | None = None,
         tiktoken_by_model: bool = True,
-        schema_via_prompt: bool = False,
+        schema_in_prompt: bool = False,
+        json_object_fallback: bool = False,
     ):
         self.client = client or OpenAI(base_url=base_url, api_key=api_key)
         self._tiktoken_by_model = tiktoken_by_model
-        # Some providers (e.g. Amazon Bedrock) mis-handle json_schema
-        # response_format for open-weight models: strict grammars loop on
-        # whitespace and non-strict ones leak stray tokens before the JSON.
-        # When set, send the schema in the prompt with json_object mode and
-        # validate the response ourselves instead.
-        self._schema_via_prompt = schema_via_prompt
+        # Field titles and descriptions reach the model either way, but out of
+        # band in response_format the model attends to them less. Off by
+        # default: it changes every prompt, and duplicates the schema on the
+        # wire at the cost of the tokens.
+        self._schema_in_prompt = schema_in_prompt
+        # For providers that mis-handle json_schema response_format (Amazon
+        # Bedrock with open-weight models: strict grammars loop on whitespace,
+        # non-strict ones leak stray tokens before the JSON). Drops grammar
+        # enforcement, leaving the repair-and-retry path to catch bad output,
+        # so it needs schema_in_prompt to tell the model what to produce.
+        self._json_object_fallback = json_object_fallback
 
     def generate(
         self,
@@ -109,16 +115,18 @@ class OpenAICompatibleLLMService:
     ) -> Tuple[T, int, str | None]:
         tokenizer = self.get_tokenizer(model)
 
-        # Store only the plain instruction in session memory: with
-        # schema_via_prompt the schema rides along on the outgoing copy only,
-        # so conversations stay identical across providers.
+        # Store only the plain instruction in session memory: the schema rides
+        # along on the outgoing copy only, so conversations stay identical
+        # across providers.
         memory.add_user_message(instruction.generate())
         # Pass roles through unchanged: the system prompt and previous
         # assistant turns must not be re-sent as user messages.
         messages: list[dict[str, str]] = memory.get_messages(tokenizer=tokenizer, max_tokens=token_length)
 
         schema_tokens = 0
-        if self._schema_via_prompt:
+        if self._schema_in_prompt:
+            # Appended to the outgoing copy only, so session memory stays
+            # identical across providers and conditions.
             schema_suffix = (
                 "\n\nRespond with ONLY a JSON object that conforms to this JSON schema:\n"
                 + json.dumps(response_model.model_json_schema())
@@ -126,11 +134,15 @@ class OpenAICompatibleLLMService:
             messages = messages[:-1] + [
                 {**messages[-1], "content": messages[-1]["content"] + schema_suffix}
             ]
-            # The schema suffix exists only to work around the provider's
-            # broken response_format; exclude it from the reported count so
-            # sessions stay token-comparable with providers that take the
-            # schema out-of-band. Approximate (trimming tokenizer).
-            schema_tokens = tokenizer(schema_suffix)
+            if self._json_object_fallback:
+                # Here the suffix is forced by the provider's broken
+                # response_format, so exclude it: the session stays
+                # token-comparable with providers that send the schema out of
+                # band. Approximate (trimming tokenizer). Requested as an
+                # experimental condition instead, it is a real cost and counts.
+                schema_tokens = tokenizer(schema_suffix)
+
+        if self._json_object_fallback:
             response_format = {"type": "json_object"}
         else:
             # strict matches what the SDK's parse() helper sent before the

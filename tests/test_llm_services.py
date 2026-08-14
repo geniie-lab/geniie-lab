@@ -107,15 +107,69 @@ def test_memory_never_contains_the_thinking_trace():
     assert '"reason": "r"' in stored
 
 
-def test_schema_via_prompt_appends_schema_to_outgoing_copy_only():
+def test_schema_stays_out_of_the_prompt_by_default():
     stub = StubClient(VALID_QUERY_JSON)
-    (response, _, _), memory = _service_call(stub, schema_via_prompt=True)
+    _service_call(stub)
+
+    assert "JSON schema" not in stub.calls[0]["messages"][-1]["content"]
+    assert stub.calls[0]["response_format"]["type"] == "json_schema"
+
+
+def test_schema_rides_on_the_outgoing_copy_only():
+    stub = StubClient(VALID_QUERY_JSON)
+    (response, _, _), memory = _service_call(stub, schema_in_prompt=True)
 
     assert response.query == "q"
-    assert stub.calls[0]["response_format"] == {"type": "json_object"}
     # Schema rides on the outgoing message; session memory keeps the plain one.
     assert "JSON schema" in stub.calls[0]["messages"][-1]["content"]
     assert "JSON schema" not in memory.get_all_messages()[-2]["content"]
+
+
+def test_schema_in_prompt_keeps_grammar_enforcement():
+    # The two settings are independent: the schema in the prompt does not cost
+    # the strict json_schema response_format.
+    stub = StubClient(VALID_QUERY_JSON)
+    _service_call(stub, schema_in_prompt=True)
+
+    assert "JSON schema" in stub.calls[0]["messages"][-1]["content"]
+    assert stub.calls[0]["response_format"]["type"] == "json_schema"
+    assert stub.calls[0]["response_format"]["json_schema"]["strict"] is True
+
+
+def test_json_object_fallback_drops_the_schema_response_format():
+    stub = StubClient(VALID_QUERY_JSON)
+    _service_call(stub, json_object_fallback=True)
+
+    assert stub.calls[0]["response_format"] == {"type": "json_object"}
+
+
+def test_bedrock_pairs_the_fallback_with_the_prompt_schema(monkeypatch):
+    # The fallback has no grammar, so that registry entry must also ask for
+    # the schema in the prompt or nothing tells the model what to produce.
+    from geniie_lab.services.llm.llm_service_factory import _REGISTRY
+
+    monkeypatch.setenv("BEDROCK_API_KEY", "test-key")
+    service = _REGISTRY["bedrock"]()
+    assert service._json_object_fallback is True
+    assert service._schema_in_prompt is True
+
+
+def test_schema_tokens_count_when_the_schema_is_a_choice():
+    stub = StubClient(VALID_QUERY_JSON)
+    (_, total_token, _), _ = _service_call(stub, schema_in_prompt=True)
+
+    assert total_token == 99  # the usage the provider reported, undiscounted
+
+
+def test_schema_tokens_are_excluded_when_the_provider_forces_them():
+    # A provider that cannot do grammar must send the schema in the prompt, so
+    # charging it for those tokens would make it look costlier than providers
+    # that send the same schema out of band.
+    stub = StubClient(VALID_QUERY_JSON)
+    (_, total_token, _), _ = _service_call(
+        stub, schema_in_prompt=True, json_object_fallback=True)
+
+    assert total_token < 99
 
 
 def test_repaired_output_needs_no_second_call():
