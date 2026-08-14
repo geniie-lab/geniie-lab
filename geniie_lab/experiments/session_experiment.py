@@ -92,6 +92,11 @@ class RankingStage:
         state.serp = opensearch_client.search_index_with_snippets(query_text, start=start_offset, size=settings.task.serp_size)
         state.docids = [item.docid for item in state.serp.results] if state.serp and state.serp.results else []
 
+        if settings.mark_visited_results and state.serp and state.serp.results:
+            for item in state.serp.results:
+                if item.docid in state.visited_docids:
+                    item.visited = True
+
         dataset = ir_datasets.load(settings.topicset.name)
         if callable(dataset):
             dataset = dataset()
@@ -144,6 +149,12 @@ class ClickStage:
         thinking_token = llm_service.get_tokenizer(model.name)(thinking) if thinking else None
         if not self.config.log_thinking:
             thinking = None
+
+        # Marked at click time, not read time: out-of-range indices are left
+        # for the judgement stage, which already reports them as an error.
+        for click_index in state.clicks.ranking_list:
+            if 1 <= click_index <= len(state.serp.results):
+                state.visited_docids.add(state.serp.results[click_index - 1].docid)
 
         output = ClickExperimentOutput(
             session_name=settings.name,

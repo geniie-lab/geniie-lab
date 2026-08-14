@@ -1,6 +1,6 @@
 # Standard library
 from dataclasses import dataclass, field
-from typing import Dict, List, Literal, Optional, Union
+from typing import Dict, List, Literal, Optional, Set, Union
 
 # Local application imports
 from geniie_lab.dataclasses.serp import Serp, FullText
@@ -46,6 +46,8 @@ class ExperimentSettings:
     max_actions: Optional[int] = None
     custom_settings: Optional[str] = None
     full_log: Optional[bool] = False
+    # Set False to reproduce runs made before visited marking existed.
+    mark_visited_results: bool = True
 
 @dataclass
 class ExperimentState:
@@ -60,6 +62,7 @@ class ExperimentState:
     error: Optional[str] = None
     action_num: Optional[int] = 1
     next_action: Optional[Action] = None
+    visited_docids: Set[str] = field(default_factory=set)
 
 @dataclass
 class Error:
