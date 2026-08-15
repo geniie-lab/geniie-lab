@@ -35,8 +35,6 @@ Set `response_model` on the `relevance` stage to `SubtopicRelevanceJudgement[sca
 | `GradedRelevance` | `NotRelevant`, `PartiallyRelevant`, `Relevant`, `HighlyRelevant` |
 | `Relevance` | `Relevant`, `NotRelevant` |
 
-`RubricRelevance` follows the four-point scale used for LLM relevance assessment by [Thomas et al.](https://arxiv.org/abs/2309.10621) and its open-source reproduction [UMBRELA](https://arxiv.org/abs/2406.06519) — nothing to do with it, related but does not answer it, answers it, dedicated to it — with "answer the query" read as "satisfy the need". Its labels name what happened to the need, not the unit being judged, so the same scale works for a subtopic or a whole topic.
-
 The two four-point scales are not interchangeable, and the choice changes what GII reports. `GradedRelevance` is a graded relevance scale: it asks how relevant the document is to the subtopic. `RubricRelevance` is a rubric over what happened to the information need the subtopic expresses — whether the document merely touches the subject or actually satisfies the need. A document can be highly relevant to a subtopic while satisfying none of it.
 
 ```python
