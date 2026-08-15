@@ -156,8 +156,10 @@ class SubtopicRelevance(RequiresLabelScale[Label]):
         title="label",
         description="The relevance label for this subtopic, as defined in the instruction."
     )
+    # Required so the grammar cannot omit the key; "" is still a valid value,
+    # which is what the instruction asks for on NotAddressed.
     evidence: str = Field(
-        "",
+        ...,
         title="evidence",
         description=(
             "A verbatim quotation copied from the document that supports this "

@@ -80,6 +80,8 @@ The `rel_judge` record carries `labels`, one entry per presented subtopic, along
  "qrel_labels": {"1": 1, "2": 0}, "reason": "..."}
 ```
 
+Every entry carries an `evidence` key, because the schema requires it: the model cannot leave it out, only leave it empty, which is what the instruction asks for on `NotAddressed`.
+
 Two things to know when reading these records.
 
 `qrel_labels` has an entry for **every** presented subtopic, using 0 where the qrels record nothing. These collections record nonrelevance per document rather than per subtopic, so listing only the graded rows would hide every assessor "no" and make agreement look perfect by construction.
