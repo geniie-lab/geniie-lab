@@ -45,6 +45,8 @@ Furthermore, we need to set `max_action` in the agentic experiment.
 
 > **Note:** `total_token` is the total number of tokens consumed by the LLM call for that stage. It is absent from `ranking` output, which is produced by the retrieval ranker and involves no LLM call.
 
+> **Note:** After 2648777, the relevance `label` is recorded as the value the model emitted (`Relevant`) rather than the enum name (`Relevance.RELEVANT`). The sample below predates that change.
+
 ```
 {"session_name": "my_agentic_experiment", "model": "llama3.3:70b-instruct-q4_K_M", "task": "High-Recall Retrieval", "dataset": "aquaint/trec-robust-2005", "topic_id": "303", "query": "Hubble Telescope AND (achievements OR discoveries OR breakthroughs)", "start": 0, "size": 10, "repetition": 1, "reason": null, "stage": "query", "total_token": 837, "created_at": "2025-07-02T02:31:13.317727+00:00"}
 {"session_name": "my_agentic_experiment", "model": "llama3.3:70b-instruct-q4_K_M", "ranker": "bm25", "task": "High-Recall Retrieval", "dataset": "aquaint/trec-robust-2005", "topic_id": "303", "doc_ids": ["XIE19961108.0181", ..., "NYT19990719.0430"], "start": 0, "size": 10, "performance": {"nDCG@10": 0.4922818839877925, "R@10": 0.06976744186046512}, "repetition": 1, "stage": "ranking", "created_at": "2025-07-02T02:31:13.430043+00:00"}

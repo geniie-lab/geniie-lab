@@ -65,6 +65,8 @@ plan=["query", "ranking", "relevance"] # No click
 
 > **Note:** `total_token` is the total number of tokens consumed by the LLM call for that stage. It is absent from `ranking` output, which is produced by the retrieval ranker and involves no LLM call.
 
+> **Note:** After 2648777, the relevance `label` is recorded as the value the model emitted (`Relevant`) rather than the enum name (`Relevance.RELEVANT`). The sample below predates that change.
+
 ```
 {"session_name": "my_session_experiment", "model": "gpt-4.1-mini", "task": "High-Precision Retrieval", "dataset": "aquaint/trec-robust-2005", "topic_id": "303", "query": "Hubble telescope achievements discoveries new data increased knowledge universe disproved theories", "start": 0, "size": 10, "repetition": 1, "reason": null, "stage": "query", "total_token": 837, "created_at": "2025-07-02T04:40:03.600086+00:00"}
 {"session_name": "my_session_experiment", "model": "gpt-4.1-mini", "ranker": "bm25", "task": "High-Precision Retrieval", "dataset": "aquaint/trec-robust-2005", "topic_id": "303", "doc_ids": ["APW19990108.0103", ..., "APW19990516.0013"], "start": 0, "size": 10, "performance": {"RR@10": 1.0, "nDCG@10": 0.536444579997845}, "repetition": 1, "stage": "ranking", "created_at": "2025-07-02T04:40:03.723073+00:00"}

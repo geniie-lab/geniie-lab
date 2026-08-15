@@ -215,7 +215,7 @@ class RelevanceJudgementStage:
                 dataset = settings.topicset.name,
                 topic_id = state.topic.id,
                 docid = click_docid,
-                label = f"{state.relevance_judgement.label}",
+                label = state.relevance_judgement.label.value,
                 qrel_label=qrel_label,
                 repetition = repetition,
                 total_token = total_token,
