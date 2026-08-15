@@ -38,7 +38,8 @@ class StubClient:
 
 
 def _service_call(stub, thinking_token_budget=None, reasoning_effort=None,
-                  response_model=Query, **service_kwargs):
+                  response_model=Query, model_schema_in_prompt=None,
+                  **service_kwargs):
     service = OpenAICompatibleLLMService(client=stub, tiktoken_by_model=False, **service_kwargs)
     memory = ConversationHistory(system_role=None, system_prompt="be helpful")
     memory.add_user_message("earlier user turn")
@@ -47,7 +48,8 @@ def _service_call(stub, thinking_token_budget=None, reasoning_effort=None,
     model = ModelDescription(type="openai", name="some-model", token_length=100000,
                              temperature=0.0, top_p=1.0,
                              thinking_token_budget=thinking_token_budget,
-                             reasoning_effort=reasoning_effort)
+                             reasoning_effort=reasoning_effort,
+                             schema_in_prompt=model_schema_in_prompt)
     return service.generate(model, memory, instruction, response_model), memory
 
 
@@ -143,6 +145,31 @@ def test_json_object_fallback_drops_the_schema_response_format():
     assert stub.calls[0]["response_format"] == {"type": "json_object"}
 
 
+def test_experiment_can_request_the_schema_in_the_prompt():
+    stub = StubClient(VALID_QUERY_JSON)
+    _service_call(stub, model_schema_in_prompt=True)
+
+    assert "JSON schema" in stub.calls[0]["messages"][-1]["content"]
+    assert stub.calls[0]["response_format"]["type"] == "json_schema"
+
+
+def test_experiment_setting_overrides_the_provider_default():
+    stub = StubClient(VALID_QUERY_JSON)
+    _service_call(stub, schema_in_prompt=True, model_schema_in_prompt=False)
+
+    assert "JSON schema" not in stub.calls[0]["messages"][-1]["content"]
+
+
+def test_a_provider_without_grammar_keeps_the_schema_regardless():
+    # Nothing else states the shape there, so the experiment cannot switch it
+    # off; doing so would leave the model with no schema at all.
+    stub = StubClient(VALID_QUERY_JSON)
+    _service_call(stub, json_object_fallback=True, model_schema_in_prompt=False)
+
+    assert "JSON schema" in stub.calls[0]["messages"][-1]["content"]
+    assert stub.calls[0]["response_format"] == {"type": "json_object"}
+
+
 def test_bedrock_pairs_the_fallback_with_the_prompt_schema(monkeypatch):
     # The fallback has no grammar, so that registry entry must also ask for
     # the schema in the prompt or nothing tells the model what to produce.
@@ -154,22 +181,16 @@ def test_bedrock_pairs_the_fallback_with_the_prompt_schema(monkeypatch):
     assert service._schema_in_prompt is True
 
 
-def test_schema_tokens_count_when_the_schema_is_a_choice():
+def test_total_token_is_what_the_provider_reported():
+    # Never discounted, however the schema got into the prompt. Subtracting
+    # for comparability is the analysis script's decision, not the record's.
     stub = StubClient(VALID_QUERY_JSON)
-    (_, total_token, _), _ = _service_call(stub, schema_in_prompt=True)
+    (_, plain, _), _ = _service_call(stub)
+    (_, chosen, _), _ = _service_call(StubClient(VALID_QUERY_JSON), schema_in_prompt=True)
+    (_, forced, _), _ = _service_call(
+        StubClient(VALID_QUERY_JSON), schema_in_prompt=True, json_object_fallback=True)
 
-    assert total_token == 99  # the usage the provider reported, undiscounted
-
-
-def test_schema_tokens_are_excluded_when_the_provider_forces_them():
-    # A provider that cannot do grammar must send the schema in the prompt, so
-    # charging it for those tokens would make it look costlier than providers
-    # that send the same schema out of band.
-    stub = StubClient(VALID_QUERY_JSON)
-    (_, total_token, _), _ = _service_call(
-        stub, schema_in_prompt=True, json_object_fallback=True)
-
-    assert total_token < 99
+    assert plain == chosen == forced == 99
 
 
 def test_repaired_output_needs_no_second_call():

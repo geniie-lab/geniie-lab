@@ -42,6 +42,9 @@ class ModelDescription:
     # "low" | "medium" | "high"; the model plans its own reasoning length).
     # None = provider default; ignored by models without the knob.
     reasoning_effort: Optional[str] = None
+    # Send the response schema in the prompt as well as in response_format.
+    # None = the provider's own setting; providers with no grammar always do.
+    schema_in_prompt: Optional[bool] = None
 
 @dataclass
 class ToolDescription:

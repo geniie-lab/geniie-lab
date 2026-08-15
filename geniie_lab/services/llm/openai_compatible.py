@@ -70,6 +70,7 @@ class OpenAICompatibleLLMService:
             model.name, model.token_length, model.temperature, model.top_p,
             memory, instruction, response_model,
             thinking_kwargs=self._thinking_kwargs(model),
+            schema_in_prompt=self._resolve_schema_in_prompt(model),
         )
 
     @staticmethod
@@ -80,6 +81,14 @@ class OpenAICompatibleLLMService:
         # models.
         return (getattr(message, "reasoning", None)
                 or getattr(message, "reasoning_content", None))
+
+    def _resolve_schema_in_prompt(self, model: ModelDescription) -> bool:
+        # Without a grammar there is nothing else to state the shape, so the
+        # fallback wins over any per-experiment setting.
+        if self._json_object_fallback:
+            return True
+        requested = getattr(model, "schema_in_prompt", None)
+        return self._schema_in_prompt if requested is None else requested
 
     @staticmethod
     def _thinking_kwargs(model: ModelDescription) -> dict:
@@ -105,6 +114,7 @@ class OpenAICompatibleLLMService:
         instruction: Instruction,
         response_model: Type[T],
         thinking_kwargs: dict = {},
+        schema_in_prompt: bool | None = None,
     ) -> Tuple[T, int, str | None]:
         tokenizer = self.get_tokenizer(model)
 
@@ -114,8 +124,9 @@ class OpenAICompatibleLLMService:
         # assistant turns must not be re-sent as user messages.
         messages: list[dict[str, str]] = memory.get_messages(tokenizer=tokenizer, max_tokens=token_length)
 
-        schema_tokens = 0
-        if self._schema_in_prompt:
+        if schema_in_prompt is None:
+            schema_in_prompt = self._schema_in_prompt
+        if schema_in_prompt:
             schema_suffix = (
                 "\n\nRespond with ONLY a JSON object that conforms to this JSON schema:\n"
                 + json.dumps(response_model.model_json_schema())
@@ -123,9 +134,6 @@ class OpenAICompatibleLLMService:
             messages = messages[:-1] + [
                 {**messages[-1], "content": messages[-1]["content"] + schema_suffix}
             ]
-            if self._json_object_fallback:
-                # Forced by the provider, so excluded to stay comparable.
-                schema_tokens = tokenizer(schema_suffix)
 
         if self._json_object_fallback:
             response_format = {"type": "json_object"}
@@ -157,7 +165,7 @@ class OpenAICompatibleLLMService:
             )
             usage = getattr(completion, "usage", None)
             call_tokens = getattr(usage, "total_tokens", 0) or 0
-            total_token += max(0, call_tokens - schema_tokens)
+            total_token += call_tokens
             message = completion.choices[0].message
             content = message.content or ""
             try:

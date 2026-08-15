@@ -101,6 +101,7 @@ my_settings = ExperimentSettings(
 - `top_p`: Nucleus (top-p) sampling probability, applied consistently across all LLM types (Default: 1.0)
 - `thinking_token_budget`: Reasoning models only — hard server-side cap on reasoning tokens per call (vLLM qwen3-class reasoning parsers; silently ignored elsewhere). `None` means uncapped (Default: `None`)
 - `reasoning_effort`: gpt-oss models only — trained-in reasoning-length dial, `low` | `medium` | `high`. `None` means the provider default (Default: `None`)
+- `schema_in_prompt`: Send the response schema in the prompt as well as out of band in `response_format`, so the field `title` and `description` text sits where the model attends to it. Costs the duplicated tokens, which are counted in `total_token`. `None` means the provider's own setting, and a provider with no grammar sends it regardless. See [Invalid JSON handling policy](../advanced/json_handling.md) (Default: `None`)
 
 See `scripts/run_session_experiment_reasoning.py` for a session template configured for reasoning models, including the recommended vLLM server flags.
 

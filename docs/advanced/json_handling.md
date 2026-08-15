@@ -46,7 +46,9 @@ Two settings change that, and they are independent.
   conversation, where models attend to them more than to the same text sent
   out of band. The schema then goes over the wire twice. The suffix rides on
   the outgoing copy only — session memory keeps the plain instruction, so
-  logged conversations stay identical across providers and settings.
+  logged conversations stay identical across providers and settings. Set it
+  per experiment on `ModelDescription`; the Gemini service has no equivalent
+  and ignores it.
 - `json_object_fallback` (default `False`) drops the `json_schema`
   `response_format` for deployments that mis-handle it, leaving no grammar.
   Such an entry must also set `schema_in_prompt`, or nothing tells the model
@@ -55,11 +57,12 @@ Two settings change that, and they are independent.
   (gpt-oss-120b), while the setting is per provider, so every model on that
   entry loses grammar enforcement whether or not it needs to.
 
-The two settings also decide how the schema's tokens are reported. Chosen as
-an experimental condition, they are a real cost and count toward
-`total_token`. Forced by `json_object_fallback`, they are excluded, so a
-provider that cannot do grammar is not made to look costlier than one sending
-the same schema out of band.
+`total_token` is what the provider reported, always — the schema's tokens are
+never netted out of it. Comparing providers where only some send the schema in
+the prompt therefore means subtracting at analysis time; the schema for a
+stage's response model can be re-serialised from `geniie_lab/response.py` and
+measured, bearing in mind that those models change over time, so an estimate
+made later is against today's schema rather than the one that ran.
 
 ## Reproducibility rationale
 
