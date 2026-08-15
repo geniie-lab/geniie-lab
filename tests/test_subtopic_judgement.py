@@ -98,10 +98,22 @@ class TestSubtopicRelevanceJudgementSchema:
             labels=[{"subtopic": 1, "label": "Relevant", "evidence": "q"}], reason="r")
         assert judgement.labels[0].label is Relevance.RELEVANT
 
-    def test_evidence_defaults_empty(self):
+    def test_evidence_may_be_empty_but_not_omitted(self):
+        # The grammar must not let the model drop the key; the instruction is
+        # what says to leave it empty on NotAddressed.
         item = SubtopicRelevance[RubricRelevance](
-            subtopic=1, label=RubricRelevance.NOT_ADDRESSED)
+            subtopic=1, label=RubricRelevance.NOT_ADDRESSED, evidence="")
         assert item.evidence == ""
+        with pytest.raises(ValidationError):
+            SubtopicRelevance[RubricRelevance](
+                subtopic=1, label=RubricRelevance.NEED_SATISFIED)
+
+    def test_evidence_is_required_in_the_schema_sent_to_the_provider(self):
+        schema = SubtopicRelevanceJudgement[RubricRelevance].model_json_schema()
+        entry = schema["$defs"]["SubtopicRelevance_RubricRelevance_"]
+        assert set(entry["required"]) == {"subtopic", "label", "evidence"}
+        # Empty stays a legal value: required means present, not non-empty.
+        assert "minLength" not in entry["properties"]["evidence"]
 
     def test_reason_required(self):
         with pytest.raises(ValidationError):
