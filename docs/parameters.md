@@ -24,6 +24,7 @@ The following parameters can be configured via `ExperimentSettings` in the runne
 |Model|All|`top_p`|1.0|Nucleus (top-p) sampling probability, applied consistently across all LLM types (Default: 1.0)|
 |Model|All|`thinking_token_budget`|1024|Reasoning models only: hard server-side cap on reasoning tokens per call, as a runaway guard. Enforced by vLLM's qwen3-class reasoning parsers; silently ignored by providers without the feature. Pair with a transition phrase in the server's `--reasoning-config reasoning_end_str` for a graceful cut. `None` means uncapped (Default: `None`)|
 |Model|All|`reasoning_effort`|low|gpt-oss models only: trained-in reasoning-length dial, `low`, `medium`, or `high`. The model plans its own reasoning depth; ignored by models without the knob. `None` means the provider default (Default: `None`)|
+|Model|All|`schema_in_prompt`|True|Send the response schema in the prompt as well as out of band in `response_format`, so the field descriptions sit where the model attends to them. Costs the duplicated tokens, which are included in `total_token`. `None` means the provider's own setting; providers with no grammar always send it (Default: `None`)|
 |Tool|All|`name`|opensearch|Name of search tool|
 |Tool|All|`ranking_model`|bm25|Name of ranking model used by the tool|
 |Tool|All|`encode_model`|opensearch-project/opensearch-neural-sparse-encoding-multilingual-v1|Name of the encoder model used by sparse/dense ranking models such as `splade` and `dpr`. Not needed for `bm25` (Default: `None`)|
