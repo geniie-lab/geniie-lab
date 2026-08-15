@@ -47,10 +47,12 @@ _REGISTRY: Dict[str, Callable[[], LLMServiceProtocol]] = {
                  f"{os.getenv('BEDROCK_REGION', 'us-west-2')}.api.aws/v1",
         api_key=os.getenv("BEDROCK_API_KEY"),
         tiktoken_by_model=False,  # Bedrock model IDs are unknown to tiktoken
-        # Bedrock's json_schema grammar for gpt-oss loops on whitespace
-        # (strict) or leaks stray prefix tokens (non-strict), so it falls back
-        # to json_object. That leaves no grammar, so the prompt must carry the
-        # schema: the two settings go together here.
+        # Observed with gpt-oss-120b here: the json_schema grammar loops on
+        # whitespace (strict) or leaks stray prefix tokens (non-strict). It
+        # may be that combination rather than Bedrock as a whole, but the
+        # setting is per provider, so every model on this entry gets it.
+        # The fallback leaves no grammar, so the prompt must carry the schema:
+        # the two settings go together here.
         json_object_fallback=True,
         schema_in_prompt=True,
     ),

@@ -48,10 +48,12 @@ Two settings change that, and they are independent.
   the outgoing copy only — session memory keeps the plain instruction, so
   logged conversations stay identical across providers and settings.
 - `json_object_fallback` (default `False`) drops the `json_schema`
-  `response_format` for providers that mis-handle it, leaving no grammar. Such
-  a provider must also set `schema_in_prompt`, or nothing tells the model what
-  to produce. Amazon Bedrock is the only registry entry using it today, and it
-  sets both.
+  `response_format` for deployments that mis-handle it, leaving no grammar.
+  Such an entry must also set `schema_in_prompt`, or nothing tells the model
+  what to produce. Amazon Bedrock is the only registry entry using it today,
+  and it sets both. Note the observation was made with one model there
+  (gpt-oss-120b), while the setting is per provider, so every model on that
+  entry loses grammar enforcement whether or not it needs to.
 
 The two settings also decide how the schema's tokens are reported. Chosen as
 an experimental condition, they are a real cost and count toward

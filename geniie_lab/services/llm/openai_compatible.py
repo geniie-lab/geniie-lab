@@ -52,11 +52,13 @@ class OpenAICompatibleLLMService:
         # default: it changes every prompt, and duplicates the schema on the
         # wire at the cost of the tokens.
         self._schema_in_prompt = schema_in_prompt
-        # For providers that mis-handle json_schema response_format (Amazon
-        # Bedrock with open-weight models: strict grammars loop on whitespace,
-        # non-strict ones leak stray tokens before the JSON). Drops grammar
-        # enforcement, leaving the repair-and-retry path to catch bad output,
-        # so it needs schema_in_prompt to tell the model what to produce.
+        # For deployments that mis-handle json_schema response_format
+        # (observed with gpt-oss-120b on Bedrock: strict grammars loop on
+        # whitespace, non-strict ones leak stray tokens before the JSON).
+        # Drops grammar enforcement, leaving the repair-and-retry path to
+        # catch bad output, so it needs schema_in_prompt to tell the model
+        # what to produce. Set per provider, so it applies to every model on
+        # that entry even if only one combination is affected.
         self._json_object_fallback = json_object_fallback
 
     def generate(
