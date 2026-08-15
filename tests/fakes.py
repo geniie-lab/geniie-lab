@@ -13,6 +13,7 @@ from geniie_lab.response import (
     Action,
     Clicks,
     NextAction,
+    OrderedLabels,
     Query,
     Relevance,
     RelevanceJudgement,
@@ -66,15 +67,29 @@ class FakeLLMService:
         # rendered prompt text rather than on the emitted records.
         self.prompts: list[tuple[str, str]] = []
 
+    @staticmethod
+    def _origin_and_scale(response_model):
+        """A parametrised generic is not its own origin class, so dispatching
+        on identity needs the origin; the scale decides a valid label."""
+        meta = getattr(response_model, "__pydantic_generic_metadata__", {})
+        origin = meta.get("origin") or response_model
+        args = meta.get("args") or ()
+        return origin, (args[0] if args else None)
+
     def _canned_response(self, instruction, response_model):
+        origin, scale = self._origin_and_scale(response_model)
+        if origin is RelevanceJudgement:
+            # The most relevant label the scale offers, so a test can tell one
+            # scale from another: ordered scales end there, binary has no order.
+            label = (list(scale)[-1] if issubclass(scale, OrderedLabels)
+                     else Relevance.RELEVANT)
+            return response_model(label=label, reason="on topic")
         if response_model is Query:
             if isinstance(instruction, QueryReFormulationInstruction):
                 return Query(query="reformulated query", start=0, size=10, reason="try again")
             return Query(query="first query", start=0, size=10, reason="initial query")
         if response_model is Clicks:
             return Clicks(ranking_list=[1], reason="top result looks relevant")
-        if response_model is RelevanceJudgement:
-            return RelevanceJudgement(label=Relevance.RELEVANT, reason="on topic")
         if response_model is NextAction:
             action = self.next_actions.pop(0) if self.next_actions else Action.END_TASK
             return NextAction(action=action, reason="fake decision")

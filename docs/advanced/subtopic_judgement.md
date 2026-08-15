@@ -53,7 +53,9 @@ from geniie_lab.response import RubricRelevance, SubtopicRelevanceJudgement
     ),
 ```
 
-The scale must be given explicitly: a bare `SubtopicRelevanceJudgement` raises `specify a label scale, e.g. SubtopicRelevanceJudgement[RubricRelevance]`. Omit `response_model` altogether and the stage uses its own `RelevanceJudgement` schema, a single `Relevant`/`NotRelevant` label for the whole document.
+The scale must be given explicitly: a bare `SubtopicRelevanceJudgement` raises `specify a label scale, e.g. SubtopicRelevanceJudgement[RubricRelevance]`. Omit `response_model` altogether and the stage uses `RelevanceJudgement[Relevance]`, a single `Relevant`/`NotRelevant` label for the whole document.
+
+The same scales work without subtopics. `RelevanceJudgement[GradedRelevance]` gives one graded label per document, in the session, agentic and repetition experiments alike, and needs no subtopic-presenting topic class.
 
 The anchor wording belongs in the instruction, as above: the enum values alone name the levels but do not define them.
 

@@ -42,6 +42,18 @@ class Action(Enum):
     END_TASK = "END_TASK"
 
 # Models
+class RequiresLabelScale(BaseModel, Generic[Label]):
+    """Base for models that must be parametrised with a label scale."""
+
+    @model_validator(mode="before")
+    @classmethod
+    def _require_label_scale(cls, data):
+        if cls.__pydantic_generic_metadata__["parameters"]:
+            raise ValueError(
+                f"specify a label scale, e.g. {cls.__name__}[RubricRelevance]"
+            )
+        return data
+
 class Query(BaseModel):
     """A model for submitting a query to a search tool."""
     query: str = Field(
@@ -95,9 +107,13 @@ class Clicks(BaseModel):
         description="A brief explanation for selecting these documents."
     )
 
-class RelevanceJudgement(BaseModel):
-    """A model for labeling a document's relevance."""
-    label: Relevance = Field(
+class RelevanceJudgement(RequiresLabelScale[Label]):
+    """A model for labeling a document's relevance.
+
+    Parametrised by the label scale: RelevanceJudgement[Relevance] for the
+    binary default, or [GradedRelevance] / [RubricRelevance].
+    """
+    label: Label = Field(
         ...,
         title="label",
         description=(
@@ -123,18 +139,6 @@ class NextAction(BaseModel):
         title="reason",
         description="A brief explanation for choosing this action."
     )
-
-class RequiresLabelScale(BaseModel, Generic[Label]):
-    """Base for models that must be parametrised with a label scale."""
-
-    @model_validator(mode="before")
-    @classmethod
-    def _require_label_scale(cls, data):
-        if cls.__pydantic_generic_metadata__["parameters"]:
-            raise ValueError(
-                f"specify a label scale, e.g. {cls.__name__}[RubricRelevance]"
-            )
-        return data
 
 class SubtopicRelevance(RequiresLabelScale[Label]):
     """One subtopic's relevance label for a single document.

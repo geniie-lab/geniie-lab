@@ -32,7 +32,7 @@ from geniie_lab.dataclasses.output import (
     NextActionOutput,
 )
 from geniie_lab.memory import ConversationHistory
-from geniie_lab.response import Action, Clicks, NextAction, Query, RelevanceJudgement
+from geniie_lab.response import Action, Clicks, NextAction, Query, Relevance, RelevanceJudgement
 from geniie_lab.services.llm.llm_service_factory import LLMServiceFactory
 from geniie_lab.services.llm.llm_service_protocol import LLMServiceProtocol
 from geniie_lab.services.measure_service import MeasureService, Qrels, Run
@@ -215,7 +215,8 @@ class RelevanceJudgementStage:
             instruction_text = self.config.instruction or self.DEFAULT_INSTRUCTION
             rj_instruction = RelevanceJudgementInstruction(instruction=instruction_text, fulltext=state.fulltext)
 
-            state.relevance_judgement, total_token, thinking = llm_service.generate(model, state.memory, rj_instruction, RelevanceJudgement)
+            response_model = self.config.response_model or RelevanceJudgement[Relevance]
+            state.relevance_judgement, total_token, thinking = llm_service.generate(model, state.memory, rj_instruction, response_model)
             thinking_token = llm_service.get_tokenizer(model.name)(thinking) if thinking else None
             if not self.config.log_thinking:
                 thinking = None
