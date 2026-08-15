@@ -18,9 +18,9 @@ class OrderedLabels(str, Enum):
         return list(type(self)).index(self)
 
 class RubricRelevance(OrderedLabels):
-    """What happened to the information need a subtopic expresses."""
+    """What happened to the information need being judged against."""
     NOT_ADDRESSED = "NotAddressed"
-    ON_SUBTOPIC_ONLY = "OnSubtopicOnly"
+    RELATED_NOT_SATISFIED = "RelatedNotSatisfied"
     NEED_SATISFIED = "NeedSatisfied"
     COMPLETELY_SATISFIED = "CompletelySatisfied"
 

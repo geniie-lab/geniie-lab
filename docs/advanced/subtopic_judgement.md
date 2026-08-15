@@ -31,7 +31,7 @@ Set `response_model` on the `relevance` stage to `SubtopicRelevanceJudgement[sca
 
 | Scale | Labels |
 |---|---|
-| `RubricRelevance` | `NotAddressed`, `OnSubtopicOnly`, `NeedSatisfied`, `CompletelySatisfied` |
+| `RubricRelevance` | `NotAddressed`, `RelatedNotSatisfied`, `NeedSatisfied`, `CompletelySatisfied` |
 | `GradedRelevance` | `NotRelevant`, `PartiallyRelevant`, `Relevant`, `HighlyRelevant` |
 | `Relevance` | `Relevant`, `NotRelevant` |
 
@@ -46,7 +46,7 @@ from geniie_lab.response import RubricRelevance, SubtopicRelevanceJudgement
             Judge the document against every subtopic listed in the search topic,
             in the order listed, using exactly one of these labels:
             - NotAddressed: the document does not address this subtopic.
-            - OnSubtopicOnly: related to this subtopic but does not satisfy the need it expresses.
+            - RelatedNotSatisfied: related to this subtopic but does not satisfy the need it expresses.
             - NeedSatisfied: satisfies the need expressed by this subtopic.
             - CompletelySatisfied: dedicated to this subtopic and satisfies it completely.
         """,
