@@ -57,6 +57,8 @@ def test_relevance_stage_reports_qrel_label(patched_services, capsys):
     rel_t1 = next(r for r in records if r["stage"] == "rel_judge" and r["topic_id"] == "t1")
     assert rel_t1["docid"] == "d1"
     assert rel_t1["qrel_label"] == 1
+    # The label the model emitted, not the Python enum's name.
+    assert rel_t1["label"] == "Relevant"
     rel_t2 = next(r for r in records if r["stage"] == "rel_judge" and r["topic_id"] == "t2")
     assert rel_t2["qrel_label"] == 0
 
