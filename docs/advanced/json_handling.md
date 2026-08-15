@@ -32,6 +32,35 @@ pipeline (issue #13), identical across providers:
    topic. The experiment as a whole is never lost to a single bad output,
    and the skip is explicit in the log.
 
+## How the schema reaches the model
+
+The response schema, including every field `title` and `description` written
+in `geniie-lab/response.py`, is sent as `response_format` with `strict: True`,
+so the provider's grammar prevents a non-conforming response rather than
+leaving it to the repair pipeline above.
+
+Two settings change that, and they are independent.
+
+- `schema_in_prompt` (default `False`) additionally appends the serialised
+  schema to the outgoing user message, putting the field descriptions in the
+  conversation, where models attend to them more than to the same text sent
+  out of band. The schema then goes over the wire twice. The suffix rides on
+  the outgoing copy only — session memory keeps the plain instruction, so
+  logged conversations stay identical across providers and settings.
+- `json_object_fallback` (default `False`) drops the `json_schema`
+  `response_format` for deployments that mis-handle it, leaving no grammar.
+  Such an entry must also set `schema_in_prompt`, or nothing tells the model
+  what to produce. Amazon Bedrock is the only registry entry using it today,
+  and it sets both. Note the observation was made with one model there
+  (gpt-oss-120b), while the setting is per provider, so every model on that
+  entry loses grammar enforcement whether or not it needs to.
+
+The two settings also decide how the schema's tokens are reported. Chosen as
+an experimental condition, they are a real cost and count toward
+`total_token`. Forced by `json_object_fallback`, they are excluded, so a
+provider that cannot do grammar is not made to look costlier than one sending
+the same schema out of band.
+
 ## Reproducibility rationale
 
 Feedback retries are sometimes avoided on reproducibility grounds. We take

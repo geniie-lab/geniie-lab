@@ -47,10 +47,9 @@ _REGISTRY: Dict[str, Callable[[], LLMServiceProtocol]] = {
                  f"{os.getenv('BEDROCK_REGION', 'us-west-2')}.api.aws/v1",
         api_key=os.getenv("BEDROCK_API_KEY"),
         tiktoken_by_model=False,  # Bedrock model IDs are unknown to tiktoken
-        # Bedrock's json_schema grammar for gpt-oss loops on whitespace
-        # (strict) or leaks stray prefix tokens (non-strict); see
-        # OpenAICompatibleLLMService.schema_via_prompt.
-        schema_via_prompt=True,
+        # json_schema is broken here for gpt-oss-120b; both settings go together.
+        json_object_fallback=True,
+        schema_in_prompt=True,
     ),
     "gemini": GeminiLLMService,
 }
