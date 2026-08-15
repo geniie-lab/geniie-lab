@@ -85,7 +85,7 @@ my_settings = ExperimentSettings(
                 Evaluate the relevance of the document based on each subtopic of the search topic, one at a time and independently.
                 For every subtopic, assign a label:
                 NotAddressed - the document does not address this subtopic.
-                OnSubtopicOnly - related to this subtopic, but does not satisfy the need it expresses.
+                RelatedNotSatisfied - related to this subtopic, but does not satisfy the need it expresses.
                 NeedSatisfied - satisfies the need expressed by this subtopic.
                 CompletelySatisfied - is dedicated to this subtopic and satisfies it completely.
                 Label NotAddressed for every subtopic if the document is not in English, or if its content is misleading or malicious.

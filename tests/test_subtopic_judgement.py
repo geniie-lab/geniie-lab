@@ -73,7 +73,7 @@ class TestLabelScales:
         assert GradedRelevance.HIGHLY_RELEVANT == "HighlyRelevant"
 
     def test_rank_supports_at_least_comparisons(self):
-        assert RubricRelevance.ON_SUBTOPIC_ONLY.rank < RubricRelevance.NEED_SATISFIED.rank
+        assert RubricRelevance.RELATED_NOT_SATISFIED.rank < RubricRelevance.NEED_SATISFIED.rank
         assert RubricRelevance.COMPLETELY_SATISFIED.rank > RubricRelevance.NEED_SATISFIED.rank
         assert GradedRelevance.NOT_RELEVANT.rank == 0
         assert GradedRelevance.HIGHLY_RELEVANT.rank == len(GradedRelevance) - 1
